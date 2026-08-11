@@ -157,6 +157,8 @@ const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 let session=null, channelId=null, joinCode=null, channelName=null, gameSystem="generic", myRole="player";
 let realtimeRolls=null, realtimeMembers=null, history=[], favorites=[], myProfile=null, rollMode="system", genericGroups=[{count:1,sides:6,modifier:0}];
 let rerollBaseRoll=null, rerollSelection=new Set();
+const systemUiState={vampire:{difficulty:6,specialty:false}};
+window.systemUiState=systemUiState;
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -226,7 +228,7 @@ function showRollToast(r){
      <div class="toast-who">${esc(who)} · Vampire · Difficulté ${v.difficulty}</div>
      <div class="dice-line">${v.vals.map(x=>`<span class="die ${x===1?"one":x>=v.difficulty?"success":""}">${esc(x)}</span>`).join("")}</div>
      <div class="toast-status ${cls}">${esc(v.status)}</div>
-     <div class="toast-detail">Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}</div>`;
+     <div class="toast-detail">${v.specialty?"Avec spécialité · ":""}Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}${v.specialty?` · ${v.explosionDice} D10 supplémentaire${v.explosionDice>1?"s":""} par explosion`:""}</div>`;
  } else if(rollSystem==="band_of_blades"){
    const b=bandOfBladesOutcome(r);
    t.innerHTML=`
@@ -285,8 +287,10 @@ function runCoreSelfChecks(){
  const check=(name,ok)=>{if(!ok) failures.push(name)};
 
  try{
-   const v=vampireOutcome({dice:[{results:[8,7,1,4,9]}],metadata:{difficulty:6}});
+   const v=vampireOutcome({dice:[{results:[8,7,1,4,9]}],metadata:{difficulty:6,specialty:false}});
    check("Vampire outcome",v.raw===3 && v.ones===1 && v.net===2);
+   const vs=vampireOutcome({dice:[{results:[10,7,1]},{results:[8]}],metadata:{difficulty:6,specialty:true,vampire_explosion_dice_count:1}});
+   check("Vampire specialty",vs.raw===3 && vs.tens===1 && vs.ones===1 && vs.net===2 && vs.explosionDice===1);
 
    const f=fabulaUltimaOutcome({dice:[{results:[7],sides:10},{results:[7],sides:8}],modifier:0,metadata:{difficulty:10}});
    check("Fabula critical",f.critical===true && f.success===true && f.hr===7);
@@ -365,6 +369,8 @@ function clearRoomState({keepViews=false}={}){
  myProfile=null;
  rerollBaseRoll=null;
  rerollSelection.clear();
+ systemUiState.vampire.difficulty=6;
+ systemUiState.vampire.specialty=false;
  resetRoomVisualState();
 
  if(!keepViews){
@@ -633,9 +639,13 @@ function renderSystemControls(){
    $("modifier").disabled=true;
    h+=`<div class="vamp-controls">
         <div><label>Réserve de dés</label><div class="muted" style="font-size:.78rem;padding:11px 0">La valeur « Nombre » ci-dessus correspond à votre réserve de D10.</div></div>
-        <div><label>Difficulté</label><input id="vampDifficulty" type="number" min="2" max="10" value="6"></div>
+        <div><label>Difficulté</label><input id="vampDifficulty" type="number" min="2" max="10" value="${Number(systemUiState.vampire.difficulty||6)}" onchange="systemUiState.vampire.difficulty=Number(this.value||6)"></div>
       </div>
-      <div class="vamp-hint">Vampire standard : chaque D10 ≥ difficulté = 1 succès ; chaque 1 annule un succès. Aucun succès + au moins un 1 = échec critique.</div>`;
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:850">
+        <input id="vampSpecialty" type="checkbox" style="width:auto" ${systemUiState.vampire.specialty?"checked":""} onchange="systemUiState.vampire.specialty=this.checked">
+        Avec spécialité
+      </label>
+      <div class="vamp-hint">Vampire standard : chaque D10 ≥ difficulté = 1 succès ; chaque 1 annule un succès. Aucun succès + au moins un 1 = échec critique. <strong>Avec spécialité, chaque 10 explose : il déclenche immédiatement un D10 supplémentaire. Si ce nouveau D10 fait 10, il explose à son tour, et ainsi de suite.</strong></div>`;
  } else {
    $("diceSides").disabled=false;
    $("modifier").disabled=false;
@@ -834,7 +844,12 @@ window.sendRoll=async(diceOverride=null,nameOverride=null,modOverride=null,metad
   if(effectiveSystem==="generic" && !metadata.generic_groups){
     metadata.generic_groups=genericGroups.map(g=>({count:Number(g.count),sides:Number(g.sides),modifier:Number(g.modifier)||0}));
   }
-  if(effectiveSystem==="vampire_dark_ages" && metadata.difficulty==null) metadata.difficulty=Number($("vampDifficulty")?.value||6);
+  if(effectiveSystem==="vampire_dark_ages"){
+    if($("vampDifficulty")) systemUiState.vampire.difficulty=Number($("vampDifficulty").value||6);
+    if($("vampSpecialty")) systemUiState.vampire.specialty=!!$("vampSpecialty").checked;
+    if(metadata.difficulty==null) metadata.difficulty=Number(systemUiState.vampire.difficulty||6);
+    if(metadata.specialty==null) metadata.specialty=!!systemUiState.vampire.specialty;
+  }
   if(effectiveSystem==="band_of_blades" && metadata.zero_dice==null){
     metadata.zero_dice=Number($("diceCount")?.value||0)<=0;
   }
@@ -867,6 +882,10 @@ window.sendRoll=async(diceOverride=null,nameOverride=null,modOverride=null,metad
   if(error) throw error;
   if(!data?.ok) throw new Error(data?.error||"Jet invalide");
   showResult(data.roll);
+
+  if(effectiveSystem==="vampire_dark_ages" && metadata.specialty){
+    await resolveVampireExplosions(data.roll);
+  }
  }catch(e){alert("Jet impossible : "+(e.message||e))}
 };
 
@@ -1008,14 +1027,17 @@ function fabulaUltimaConfigText(r){
 function vampireOutcome(r){
  const vals=(r.dice||[]).flatMap(g=>g.results||[]);
  const difficulty=Math.max(2,Math.min(10,Number(r.metadata?.difficulty||6)));
- const raw=vals.filter(v=>v>=difficulty).length;
- const ones=vals.filter(v=>v===1).length;
+ const specialty=!!r.metadata?.specialty;
+ const raw=vals.filter(v=>Number(v)>=difficulty).length;
+ const ones=vals.filter(v=>Number(v)===1).length;
+ const tens=vals.filter(v=>Number(v)===10).length;
+ const explosionDice=Number(r.metadata?.vampire_explosion_dice_count||0);
  const net=Math.max(0,raw-ones);
  let status,kind;
  if(net>0){status=`RÉUSSITE — ${net} SUCCÈS`;kind="success"}
  else if(ones>0){status="ÉCHEC CRITIQUE";kind="botch"}
  else {status="ÉCHEC";kind="failure"}
- return {vals,difficulty,raw,ones,net,status,kind};
+ return {vals,difficulty,specialty,tens,explosionDice,raw,ones,net,status,kind};
 }
 function interpret(r){
  const vals=(r.dice||[]).flatMap(g=>g.results||[]);
@@ -1092,8 +1114,53 @@ function buildCompositeReroll(partial){
  };
 }
 
+function buildVampireExplosionComposite(partial){
+ if(!partial?.metadata?.vampire_explosion_partial) return partial;
+
+ const baseDice=cloneJson(partial.metadata.vampire_explosion_base_dice||[]);
+ const wave=Number(partial.metadata.vampire_explosion_wave||1);
+ const results=(partial.dice||[]).flatMap(g=>g.results||[]).map(Number);
+ const group={
+   label:`Explosion ${wave}`,
+   count:results.length,
+   sides:10,
+   sign:1,
+   results,
+   raw_total:results.reduce((a,v)=>a+Number(v||0),0)
+ };
+ group.signed_total=group.raw_total;
+ const dice=[...baseDice,group];
+ const explosionDice=dice.slice(1).reduce((sum,g)=>sum+(g.results||[]).length,0);
+ const hasNewTen=results.some(v=>Number(v)===10);
+ const originalMetadata=cloneJson(partial.metadata.vampire_explosion_original_metadata||{});
+
+ return {
+   ...partial,
+   roll_name:partial.metadata.vampire_explosion_original_name||partial.roll_name||"Jet",
+   roll_type:"vampire_dark_ages",
+   dice,
+   modifier:0,
+   dice_total:dice.flatMap(g=>g.results||[]).reduce((a,v)=>a+Number(v||0),0),
+   total:dice.flatMap(g=>g.results||[]).reduce((a,v)=>a+Number(v||0),0),
+   metadata:{
+     ...originalMetadata,
+     game_system_key:"vampire_dark_ages",
+     table_system_key:partial.metadata.vampire_explosion_table_system_key||originalMetadata.table_system_key||gameSystem,
+     specialty:true,
+     vampire_explosion:true,
+     vampire_explosion_chain_id:partial.metadata.vampire_explosion_chain_id||partial.metadata.vampire_explosion_parent_id||null,
+     vampire_explosion_parent_id:partial.metadata.vampire_explosion_parent_id||null,
+     vampire_explosion_wave:wave,
+     vampire_explosion_final:!hasNewTen,
+     vampire_explosion_dice_count:explosionDice
+   }
+ };
+}
+
 function normalizeRollForDisplay(r){
- return r?.metadata?.reroll_partial?buildCompositeReroll(r):r;
+ if(r?.metadata?.reroll_partial) return buildCompositeReroll(r);
+ if(r?.metadata?.vampire_explosion_partial) return buildVampireExplosionComposite(r);
+ return r;
 }
 
 function rollSystemKey(r){
@@ -1292,15 +1359,85 @@ window.rerollSelectedDice=async()=>{
 
 window.rerollSelectedGenericDice=window.rerollSelectedDice;
 
+async function resolveVampireExplosions(initialRoll){
+ const normalized=normalizeRollForDisplay(initialRoll);
+ if(rollSystemKey(normalized)!=="vampire_dark_ages" || !normalized.metadata?.specialty) return normalized;
+
+ let current=normalized;
+ let latestResults=(current.dice||[]).flatMap(g=>g.results||[]).map(Number);
+ let tens=latestResults.filter(v=>v===10).length;
+ if(!tens) return current;
+
+ const chainId=current.metadata?.vampire_explosion_chain_id||current.id;
+ let wave=0;
+
+ // Garde-fou très large contre une chaîne pathologique ; en pratique la probabilité
+ // d'approcher cette limite est infinitésimale.
+ while(tens>0 && wave<100){
+   wave+=1;
+   const metadata={
+     source:"universal_dice_roller",
+     game_system_key:"vampire_dark_ages",
+     table_system_key:current.metadata?.table_system_key||gameSystem,
+     specialty:true,
+     difficulty:Number(current.metadata?.difficulty||6),
+
+     vampire_explosion_partial:true,
+     vampire_explosion_chain_id:chainId,
+     vampire_explosion_parent_id:initialRoll.id||chainId,
+     vampire_explosion_wave:wave,
+     vampire_explosion_base_dice:cloneJson(current.dice||[]),
+     vampire_explosion_original_name:initialRoll.roll_name||"Jet",
+     vampire_explosion_original_metadata:cloneJson(initialRoll.metadata||{}),
+     vampire_explosion_table_system_key:initialRoll.metadata?.table_system_key||gameSystem
+   };
+
+   const {data,error}=await supabase.functions.invoke("roll-dice",{body:{
+     channel_id:channelId,
+     project_key:"universal_dice_roller",
+     roll_name:`Explosion ${wave} · ${initialRoll.roll_name||"Jet"}`,
+     roll_type:"generic",
+     dice:[{label:`Explosion ${wave}`,count:tens,sides:10,sign:1}],
+     modifier:0,
+     metadata
+   }});
+
+   if(error) throw error;
+   if(!data?.ok) throw new Error(data?.error||"Explosion de D10 invalide");
+
+   current=normalizeRollForDisplay(data.roll);
+   latestResults=(data.roll.dice||[]).flatMap(g=>g.results||[]).map(Number);
+   tens=latestResults.filter(v=>v===10).length;
+
+   // Affichage immédiat côté lanceur ; Realtime dédupliquera la même ligne.
+   processIncomingRoll(data.roll,true);
+ }
+
+ return current;
+}
+
 function processIncomingRoll(raw,showToastNow=true){
  const r=normalizeRollForDisplay(raw);
+ const chainId=r.metadata?.vampire_explosion_chain_id||null;
+
+ if(chainId){
+   // Une explosion récursive représente toujours UN seul jet logique.
+   // On remplace l'état précédent de la chaîne au lieu d'empiler chaque vague.
+   history=history.filter(x=>
+     x.id!==r.metadata?.vampire_explosion_parent_id &&
+     x.metadata?.vampire_explosion_chain_id!==chainId
+   );
+ }
+
  const already=history.some(x=>x.id===r.id);
  if(!already){
    history.unshift(r);
    history=history.slice(0,50);
    renderHistory();
    showResult(r);
-   if(showToastNow) showRollToast(r);
+
+   const pendingExplosion=r.metadata?.vampire_explosion && !r.metadata?.vampire_explosion_final;
+   if(showToastNow && !pendingExplosion) showRollToast(r);
  }
  return r;
 }
@@ -1349,7 +1486,7 @@ function showResult(r){
    $("resultInterpret").innerHTML=`
      <div class="dice-line" style="justify-content:center">${vampireDiceHtml(r,v.difficulty)}</div>
      <div class="vamp-status ${v.kind==="success"?"good":v.kind==="botch"?"danger":""}">${esc(v.status)}</div>
-     <div class="vamp-detail">Difficulté ${v.difficulty} · Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}</div>
+     <div class="vamp-detail">Difficulté ${v.difficulty} · ${v.specialty?"Avec spécialité · ":""}Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}${v.specialty?` · ${v.explosionDice} D10 supplémentaire${v.explosionDice>1?"s":""} par explosion`:""}</div>
      ${rerollControlsHtml(r)}`;
 
  }else if(rollSystem==="band_of_blades"){
@@ -1478,7 +1615,20 @@ window.saveMyProfile=async()=>{
 
 async function loadHistory(){
  const {data,error}=await supabase.from("dice_rolls").select("*").eq("channel_id",channelId).order("created_at",{ascending:false}).limit(50);if(error)return;
- history=(data||[]).map(normalizeRollForDisplay);renderHistory();
+ const normalized=(data||[]).map(normalizeRollForDisplay);
+ const seenExplosionChains=new Set();
+ history=normalized.filter(r=>{
+   const chain=r.metadata?.vampire_explosion_chain_id;
+   if(!chain) return true;
+   if(seenExplosionChains.has(chain)) return false;
+   seenExplosionChains.add(chain);
+   return true;
+ }).filter((r,i,arr)=>{
+   // Si une chaîne d'explosion est présente, masquer son jet initial brut.
+   if(r.metadata?.vampire_explosion_chain_id) return true;
+   return !arr.some(x=>x.metadata?.vampire_explosion_parent_id===r.id);
+ });
+ renderHistory();
 }
 function renderHistory(){
  if(!history.length){$("history").innerHTML=`<div class="muted">Aucun jet.</div>`;return;}
@@ -1534,7 +1684,7 @@ function renderHistory(){
        </div>
        <div class="dice-line">${v.vals.map(x=>`<span class="die ${x===1?"one":x>=v.difficulty?"success":""}">${esc(x)}</span>`).join("")}</div>
        <div class="vamp-status ${cls}" style="font-size:.8rem">${esc(v.status)}</div>
-       <div class="roll-sub">Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}</div>
+       <div class="roll-sub">${v.specialty?"Avec spécialité · ":""}Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}${v.specialty?` · ${v.explosionDice} D10 supplémentaire${v.explosionDice>1?"s":""} par explosion`:""}</div>
      </div>`;
    }
    if(rollSystem==="band_of_blades"){
@@ -1553,7 +1703,7 @@ function favoriteConfig(f){
  const mod=Number(f.modifier||0);
  let config=(parts.length?parts.join(" + ").replace("+ 1D","+ 1D"):"Jet")+(mod?` ${mod>0?"+":"−"} ${Math.abs(mod)}`:"");
  const fs=f.metadata?.game_system_key||f.roll_type||"generic";
- if(fs==="vampire_dark_ages") config+=` · Diff. ${Number(f.metadata?.difficulty||6)}`;
+ if(fs==="vampire_dark_ages") config+=` · Diff. ${Number(f.metadata?.difficulty||6)}${f.metadata?.specialty?" · Spécialité":""}`;
  if(fs==="assassins_creed") config=`${f.metadata?.approach||"Action"} ${Number(f.metadata?.difficulty||2)} · 6 dés Match`;
  if(fs==="fabula_ultima"){
    const fake={dice:f.dice||[],modifier:f.modifier||0,metadata:f.metadata||{},roll_type:"fabula_ultima"};
@@ -1576,7 +1726,12 @@ window.saveFavorite=async()=>{
  const name=$("rollName").value.trim()||"Jet";try{
   const effectiveSystem=rollMode==="generic"?"generic":gameSystem;
   const metadata={game_system_key:effectiveSystem,table_system_key:gameSystem};
-  if(effectiveSystem==="vampire_dark_ages") metadata.difficulty=Number($("vampDifficulty")?.value||6);
+  if(effectiveSystem==="vampire_dark_ages"){
+    if($("vampDifficulty")) systemUiState.vampire.difficulty=Number($("vampDifficulty").value||6);
+    if($("vampSpecialty")) systemUiState.vampire.specialty=!!$("vampSpecialty").checked;
+    metadata.difficulty=Number(systemUiState.vampire.difficulty||6);
+    metadata.specialty=!!systemUiState.vampire.specialty;
+  }
   if(effectiveSystem==="band_of_blades"){
     metadata.zero_dice=Number($("diceCount")?.value||0)<=0;
   }
@@ -1610,6 +1765,10 @@ window.runFavorite=id=>{
  const f=favorites.find(x=>x.id===id);if(!f)return;
  const favSystem=f.metadata?.game_system_key||f.roll_type||"generic";
  rollMode=favSystem==="generic"?"generic":"system";
+ if(favSystem==="vampire_dark_ages"){
+   systemUiState.vampire.difficulty=Number(f.metadata?.difficulty||6);
+   systemUiState.vampire.specialty=!!f.metadata?.specialty;
+ }
  if(favSystem==="generic"){
    if(Array.isArray(f.metadata?.generic_groups) && f.metadata.generic_groups.length){
      genericGroups=f.metadata.generic_groups.map(g=>({
@@ -1652,7 +1811,10 @@ window.runFavorite=id=>{
    if($("dhAdvCount")) $("dhAdvCount").value=Math.max(1,Number(f.metadata?.advantage_count||1));
    toggleDhAdvCount();
  }
- if(favSystem==="vampire_dark_ages" && $("vampDifficulty")) $("vampDifficulty").value=Number(f.metadata?.difficulty||6);
+ if(favSystem==="vampire_dark_ages"){
+   if($("vampDifficulty")) $("vampDifficulty").value=Number(systemUiState.vampire.difficulty||6);
+   if($("vampSpecialty")) $("vampSpecialty").checked=!!systemUiState.vampire.specialty;
+ }
  sendRoll(f.dice,f.name,f.modifier,f.metadata||{},favSystem);
 };
 window.deleteFavorite=async id=>{if(!confirm("Supprimer ce favori ?"))return;const {error}=await supabase.rpc("delete_my_dice_roll_favorite",{p_favorite_id:id});if(!error){await loadFavorites();toast("Favori supprimé")}};
