@@ -62,6 +62,7 @@ label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 
     <div class="card home-box">
       <h1 class="home-title">Universal Dice Roller</h1>
       <div class="home-sub">Créez une table ou rejoignez votre groupe avec son code.</div>
+      <div class="muted" style="text-align:center;font-size:.66rem;font-weight:800;margin-top:7px;letter-spacing:.04em">Version 1.41</div>
       <div class="home-actions">
         <button class="btn primary" onclick="openCreate()">Créer une table</button>
         <button class="btn" onclick="openJoin()">Rejoindre une table</button>
@@ -1109,6 +1110,7 @@ function buildCompositeReroll(partial){
        || gameSystem,
      reroll:true,
      reroll_parent_id:partial.metadata.reroll_parent_id||null,
+     reroll_chain_origin_id:partial.metadata.reroll_original_metadata?.reroll_chain_origin_id||partial.metadata.reroll_parent_id||null,
      rerolled_count:selections.length
    }
  };
@@ -1157,8 +1159,58 @@ function buildVampireExplosionComposite(partial){
  };
 }
 
+function normalizeStoredRollRecord(r){
+ if(!r || typeof r!=="object") return r;
+ const out={...r};
+
+ // Selon la provenance (Edge Function, SELECT, Realtime), JSONB peut arriver
+ // déjà désérialisé ou sous forme de chaîne. On uniformise systématiquement.
+ for(const key of ["metadata","dice"]){
+   if(typeof out[key]==="string"){
+     try{out[key]=JSON.parse(out[key])}catch{}
+   }
+ }
+ if(!out.metadata || typeof out.metadata!=="object" || Array.isArray(out.metadata)) out.metadata={};
+ if(!Array.isArray(out.dice)) out.dice=[];
+ return out;
+}
+
+function findRerollParent(r){
+ const parentId=r?.metadata?.reroll_parent_id;
+ if(!parentId) return null;
+ return history.find(x=>x.id===parentId || x.metadata?.reroll_chain_origin_id===parentId) || null;
+}
+
+function buildCompositeRerollRobust(partial){
+ partial=normalizeStoredRollRecord(partial);
+ if(!partial?.metadata?.reroll_partial) return partial;
+
+ // Normalement le jet d'origine est inclus dans metadata.reroll_base_dice.
+ // En Realtime, si ce fragment n'est pas disponible, on peut le reconstruire
+ // depuis le jet parent déjà présent dans l'historique de la table.
+ if(!Array.isArray(partial.metadata.reroll_base_dice) || !partial.metadata.reroll_base_dice.length){
+   const parent=findRerollParent(partial);
+   if(parent){
+     partial={
+       ...partial,
+       metadata:{
+         ...partial.metadata,
+         reroll_base_dice:cloneJson(parent.dice||[]),
+         reroll_original_modifier:Number(parent.modifier||0),
+         reroll_original_name:parent.roll_name||"Jet",
+         reroll_original_metadata:cloneJson(parent.metadata||{}),
+         reroll_original_system:rollSystemKey(parent),
+         reroll_original_roll_type:parent.roll_type||rollSystemKey(parent)
+       }
+     };
+   }
+ }
+ return buildCompositeReroll(partial);
+}
+
 function normalizeRollForDisplay(r){
- if(r?.metadata?.reroll_partial) return buildCompositeReroll(r);
+ r=normalizeStoredRollRecord(r);
+ if(r?.metadata?.reroll_partial) return buildCompositeRerollRobust(r);
  if(r?.metadata?.vampire_explosion_partial) return buildVampireExplosionComposite(r);
  return r;
 }
@@ -1417,6 +1469,7 @@ async function resolveVampireExplosions(initialRoll){
 }
 
 function processIncomingRoll(raw,showToastNow=true){
+ raw=normalizeStoredRollRecord(raw);
  const r=normalizeRollForDisplay(raw);
  const chainId=r.metadata?.vampire_explosion_chain_id||null;
 
@@ -1615,7 +1668,7 @@ window.saveMyProfile=async()=>{
 
 async function loadHistory(){
  const {data,error}=await supabase.from("dice_rolls").select("*").eq("channel_id",channelId).order("created_at",{ascending:false}).limit(50);if(error)return;
- const normalized=(data||[]).map(normalizeRollForDisplay);
+ const normalized=(data||[]).map(normalizeStoredRollRecord).map(normalizeRollForDisplay);
  const seenExplosionChains=new Set();
  history=normalized.filter(r=>{
    const chain=r.metadata?.vampire_explosion_chain_id;
@@ -1840,9 +1893,40 @@ function rollToastText(r){
  return `${who} · ${name} : ${r.total}`;
 }
 
+async function hydrateRealtimeRoll(row){
+ const base=normalizeStoredRollRecord(row);
+ if(!base?.id) return base;
+
+ // Pour les jets techniques (relance / explosion), on relit la ligne stockée
+ // avant affichage. Cela garantit que tous les clients utilisent exactement
+ // le même metadata JSONB que le lanceur, au lieu de dépendre du payload
+ // minimal que Realtime peut fournir.
+ const technical=!!(
+   base.metadata?.reroll_partial ||
+   base.metadata?.vampire_explosion_partial ||
+   String(base.roll_name||"").startsWith("Relance ·") ||
+   String(base.roll_name||"").startsWith("Explosion ")
+ );
+ if(!technical) return base;
+
+ try{
+   const {data,error}=await supabase
+     .from("dice_rolls")
+     .select("*")
+     .eq("id",base.id)
+     .single();
+   if(!error && data) return normalizeStoredRollRecord(data);
+ }catch{}
+ return base;
+}
+
 async function startRealtime(){
  await stopRealtime();
- realtimeRolls=supabase.channel("rolls-"+channelId+"-"+Math.random()).on("postgres_changes",{event:"INSERT",schema:"public",table:"dice_rolls",filter:`channel_id=eq.${channelId}`},p=>processIncomingRoll(p.new,true)).subscribe();
+ realtimeRolls=supabase.channel("rolls-"+channelId+"-"+Math.random())
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"dice_rolls",filter:`channel_id=eq.${channelId}`},async p=>{
+     const full=await hydrateRealtimeRoll(p.new);
+     processIncomingRoll(full,true);
+   }).subscribe();
  realtimeMembers=supabase.channel("members-"+channelId+"-"+Math.random()).on("postgres_changes",{event:"*",schema:"public",table:"dice_channel_members",filter:`channel_id=eq.${channelId}`},()=>loadPeople()).subscribe();
 }
 async function stopRealtime(){if(realtimeRolls)await supabase.removeChannel(realtimeRolls);if(realtimeMembers)await supabase.removeChannel(realtimeMembers);realtimeRolls=realtimeMembers=null}
