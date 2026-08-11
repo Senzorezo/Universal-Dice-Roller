@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Universal Dice Roller</title>
+<style>
+:root{
+  --bg:#081018;--panel:#101a25;--panel2:#162332;--line:#26384a;--text:#f3f6f8;--muted:#93a4b5;
+  --accent:#d9aa58;--accent2:#f0c979;--good:#58c58b;--bad:#e66f77;--blue:#63aee8;
+  --shadow:0 14px 36px rgba(0,0,0,.28);--radius:14px;
+}
+*{box-sizing:border-box} html{background:var(--bg)} body{margin:0;min-height:100vh;background:linear-gradient(180deg,#0c1722,#071018 45%,#050a0f);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input,select{font:inherit} button{cursor:pointer}
+.hidden{display:none!important}.muted{color:var(--muted)}.danger{color:#ffb0b5!important}.good{color:var(--good)}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent2);font-weight:800}
+header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line);background:#0a131dcc;backdrop-filter:blur(12px);position:sticky;top:0;z-index:30}
+.brand{font-weight:900;letter-spacing:.02em}.brand small{display:block;font-weight:500;color:var(--muted);font-size:.67rem;margin-top:2px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+main{max-width:1280px;margin:auto;padding:14px}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{padding:12px 14px;border-bottom:1px solid var(--line);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;font-weight:850}
+.card-b{padding:14px}
+input,select{width:100%;background:#09121b;color:var(--text);border:1px solid #31465a;border-radius:10px;padding:11px 12px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 5px}
+.btn{border:1px solid #34495d;background:#182839;color:var(--text);border-radius:10px;padding:10px 13px;font-weight:800}
+.btn.primary{background:#74541f;border-color:#aa7c31;color:#fff5df}.btn.ghost{background:transparent}.btn.red{border-color:#734149;background:#331c22;color:#ffc1c5}.btn.small{padding:7px 9px;font-size:.72rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.home{min-height:calc(100vh - 90px);display:grid;place-items:center}.home-box{width:min(560px,100%);padding:22px}
+.home-title{text-align:center;font-size:1.7rem;font-weight:950;margin:0 0 5px}.home-sub{text-align:center;color:var(--muted);font-size:.84rem;margin-bottom:22px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.home-actions .btn{padding:16px 10px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tab{flex:1;border:1px solid var(--line);background:#0d1721;color:var(--muted);padding:9px;border-radius:10px;font-weight:800}.tab.active{background:#1b2c3d;color:var(--text);border-color:#4a6279}
+.room-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.room-title{font-size:1.1rem;font-weight:900}.room-meta{font-size:.72rem;color:var(--muted);margin-top:3px}
+.room-grid{display:grid;grid-template-columns:210px minmax(0,1fr) 340px;gap:12px;align-items:start}
+.people{display:grid;gap:8px}.person{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#0c151e}.portrait{height:145px;background:#0a1118;display:grid;place-items:center;overflow:hidden}.portrait img{width:100%;height:100%;object-fit:cover}.portrait-fallback{font-size:2.2rem;color:#506274}.portrait.editable{cursor:pointer;position:relative}.portrait.editable:after{content:"Ajouter une image";position:absolute;left:8px;right:8px;bottom:8px;padding:5px 7px;border-radius:8px;background:#081018cc;border:1px solid #42586d;color:#d9e2e9;font-size:.62rem;font-weight:800;text-align:center}.profile-mini{border:0;background:transparent;color:var(--blue);font-size:.65rem;font-weight:800;padding:0;margin-left:6px}.person-info{padding:9px 10px}.char{font-weight:900;text-transform:uppercase;font-size:.8rem}.player{font-size:.68rem;color:var(--muted);margin-top:2px}.gm-tag{display:inline-block;font-size:.58rem;border:1px solid #9b7738;color:var(--accent2);border-radius:999px;padding:2px 6px;margin-bottom:5px}
+.dice-builder{display:grid;grid-template-columns:1.5fr .65fr .8fr .7fr auto;gap:8px;align-items:end}.dice-groups{display:grid;gap:7px;margin-top:10px}.dice-group-row{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:end}.dice-group-row .btn{height:42px}.generic-summary{margin-top:8px;font-size:.76rem;font-weight:850;color:var(--accent2)}.dice-builder label{margin-top:0}
+.result-hero{padding:18px;border:1px solid #5f4c2d;border-radius:13px;background:radial-gradient(circle at top,#2a251c,#111820 65%);text-align:center;margin-top:12px}.result-total{font-size:3rem;font-weight:950;color:var(--accent2);line-height:1}.result-name{font-weight:900;margin-top:6px}.result-interpret{font-size:.83rem;margin-top:8px;color:#dbe4eb}.vamp-status{font-size:1.05rem;font-weight:950;margin-top:8px}.vamp-detail{margin-top:6px;font-size:.76rem;color:var(--muted)}.die.success{border-color:#4fa978;background:#18382b}.die.one{border-color:#b95761;background:#421f26;color:#ffd7da}.vamp-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.vamp-hint{font-size:.7rem;color:var(--muted);margin-top:8px}.dh-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.dh-adv{display:grid;grid-template-columns:1fr .55fr;gap:8px;margin-top:8px}.die.hope{border-color:#4f86b6;background:#173650}.die.fear{border-color:#a45a63;background:#3d2228}.die.adv{border-color:#b58a43;background:#3a301d}.dh-status{font-size:1.02rem;font-weight:950;margin-top:8px}.dh-critical{color:var(--accent2)}.roll-mode-switch{display:flex;gap:6px;margin-bottom:10px}.roll-mode-btn{flex:1;border:1px solid var(--line);background:#0d1721;color:var(--muted);padding:8px 10px;border-radius:10px;font-weight:850}.roll-mode-btn.active{background:#1c2c3a;color:var(--text);border-color:#5a7084}.mode-badge{display:inline-block;font-size:.58rem;border:1px solid #3a5268;border-radius:999px;padding:2px 6px;color:#a9c4da;margin-left:6px}
+.favorites-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.favorites-title{font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}.favs{display:grid;gap:8px}.fav{display:grid;grid-template-columns:1fr auto;align-items:stretch;border:1px solid #3c5268;border-radius:11px;overflow:hidden;background:#12202d}.fav-run{border:0;background:transparent;color:var(--text);padding:11px 12px;text-align:left}.fav-name{display:block;font-size:.78rem;font-weight:900}.fav-config{display:block;color:var(--muted);font-size:.67rem;margin-top:3px}.fav-del{border:0;border-left:1px solid #3c5268;background:transparent;color:#ef8d94;padding:0 13px;font-size:1rem;font-weight:900}.fav:hover{border-color:#6b8298}.fav-empty{font-size:.72rem;color:var(--muted);padding:10px 0}
+.history{display:grid;gap:8px;max-height:68vh;overflow:auto}.roll{border:1px solid var(--line);border-radius:11px;background:#0b151f;padding:10px}.roll-head{display:flex;justify-content:space-between;gap:8px}.roll-title{font-size:.78rem;font-weight:900}.roll-total{font-size:1.25rem;font-weight:950;color:var(--accent2)}.roll-sub{font-size:.64rem;color:var(--muted);margin-top:2px}.dice-line{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.die{min-width:29px;height:29px;padding:0 6px;border-radius:8px;display:grid;place-items:center;background:#172a3b;border:1px solid #41647f;font-size:.7rem;font-weight:900}.die.neg{background:#3a2026;border-color:#87505a}
+.modal{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:16px;z-index:100}.modal-box{width:min(540px,100%);max-height:90vh;overflow:auto}
+.admin-list{display:grid;gap:10px}.admin-table{border:1px solid var(--line);border-radius:11px;padding:11px;background:#0c161f}.admin-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.member-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid #223344;font-size:.75rem}
+.toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,34px) scale(.98);opacity:0;pointer-events:none;background:radial-gradient(circle at top,#2a251c,#111820 68%);border:1px solid #5f4c2d;border-radius:14px;padding:14px 16px;box-shadow:0 18px 46px rgba(0,0,0,.48);z-index:200;transition:.22s;max-width:calc(100vw - 24px);width:min(430px,calc(100vw - 24px));text-align:center}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast .toast-total{font-size:2.4rem;font-weight:950;color:var(--accent2);line-height:1}.toast .toast-name{font-weight:900;margin-top:5px}.toast .toast-who{font-size:.7rem;color:var(--muted);margin-top:3px}.toast .toast-status{font-size:.95rem;font-weight:950;margin-top:8px}.toast .toast-detail{font-size:.72rem;color:var(--muted);margin-top:5px}.toast .dice-line{justify-content:center}
+.mobile-people{display:none}
+@media(max-width:980px){.room-grid{grid-template-columns:180px minmax(0,1fr)}.history-card{grid-column:2}.room-grid>.people-card{grid-row:1 / span 2}}
+@media(max-width:700px){
+  header{height:54px}main{padding:10px}.home{min-height:calc(100vh - 74px)}.home-box{padding:16px}.home-actions{grid-template-columns:1fr}
+  .room-top{align-items:flex-start}.room-grid{display:block}.people-card{display:none}.history-card{margin-top:10px}.portrait{display:none}
+  .mobile-people{display:flex;gap:6px;overflow:auto;margin-bottom:10px;padding-bottom:2px}.mobile-person{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:.67rem;background:#101d29}.mobile-person strong{text-transform:uppercase}
+  .dice-builder{grid-template-columns:1fr 1fr}.dice-builder .wide{grid-column:1/-1}.dice-builder .roll-btn{grid-column:1/-1;padding:13px}
+  .card-h{padding:10px 12px}.card-b{padding:12px}.result-total{font-size:2.5rem}.history{max-height:none}.room-title{font-size:.98rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🎲 Universal Dice Roller<small id="headerSub">Lanceur partagé</small></div>
+  <button class="icon-btn" id="adminBtn" title="Administration">⚙</button>
+</header>
+
+<main>
+  <section id="homeView" class="home">
+    <div class="card home-box">
+      <h1 class="home-title">Universal Dice Roller</h1>
+      <div class="home-sub">Créez une table ou rejoignez votre groupe avec son code.</div>
+      <div class="home-actions">
+        <button class="btn primary" onclick="openCreate()">Créer une table</button>
+        <button class="btn" onclick="openJoin()">Rejoindre une table</button>
+      </div>
+      <div class="actions" style="justify-content:center;margin-top:16px">
+        <button class="btn ghost small hidden" id="resumeBtn" onclick="resumeRoom()">Revenir à ma table</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="roomView" class="hidden">
+    <div class="room-top">
+      <div>
+        <div class="room-title" id="roomName">Table</div>
+        <div class="room-meta"><span id="systemLabel">Générique</span> · code <span id="roomCode" class="code">------</span></div>
+      </div>
+      <button class="btn small" onclick="leaveRoom()">Quitter</button>
+    </div>
+
+    <div id="mobilePeople" class="mobile-people"></div>
+
+    <div class="room-grid">
+      <div class="card people-card">
+        <div class="card-h">Participants</div>
+        <div class="card-b"><div id="people" class="people"></div></div>
+      </div>
+
+      <div>
+        <div id="resultHero" class="result-hero hidden" style="margin-top:0;margin-bottom:10px">
+          <div id="resultTotal" class="result-total">0</div>
+          <div id="resultName" class="result-name">Jet</div>
+          <div id="resultInterpret" class="result-interpret"></div>
+        </div>
+
+        <div class="card">
+        <div class="card-h">Lancer les dés</div>
+        <div class="card-b">
+          <div class="dice-builder">
+            <div class="wide"><label>Nom du lancer</label><input id="rollName" value="Jet de dés"></div>
+            <div><label>Nombre</label><input id="diceCount" type="number" min="1" max="100" value="1" oninput="if(rollMode===\'generic\'){syncBaseDiceToGeneric();updateGenericSummary()}"></div>
+            <div><label>Dé</label><select id="diceSides" onchange="if(rollMode===\'generic\'){syncBaseDiceToGeneric();updateGenericSummary()}">
+              <option value="2">D2</option><option value="4">D4</option><option value="6" selected>D6</option>
+              <option value="8">D8</option><option value="10">D10</option><option value="12">D12</option><option value="20">D20</option>
+            </select></div>
+            <div><label>Mod.</label><input id="modifier" type="number" value="0" oninput="updateGenericSummary()"></div>
+            <button class="btn primary roll-btn" onclick="sendRoll()">Lancer</button>
+          </div>
+
+          <div id="systemControls"></div>
+
+          <div class="actions">
+            <button class="btn small" onclick="saveFavorite()">☆ Enregistrer ce jet</button>
+          </div>
+          <div class="favorites-section">
+            <div class="favorites-title">Mes jets favoris</div>
+            <div id="favorites" class="favs"><div class="fav-empty">Aucun jet enregistré. Configurez un jet puis utilisez « Enregistrer ce jet ».</div></div>
+          </div>
+
+        </div>
+        </div>
+      </div>
+
+      <div class="card history-card">
+        <div class="card-h">Historique</div>
+        <div class="card-b"><div id="history" class="history"><div class="muted">Aucun jet.</div></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="modal" class="modal hidden"><div class="card modal-box"><div class="card-h" id="modalTitle">Fenêtre</div><div class="card-b" id="modalBody"></div></div></div>
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const CONFIG = {
+  SUPABASE_URL: "https://sridgmkhxomlksjxbicf.supabase.co",
+  SUPABASE_KEY: "sb_publishable_58I51sY7Y_JFu3tDuo7xmw_L4EvC_sq",
+  ADMIN_PASSWORD: "dice-admin" // garde-fou local uniquement : change-le ici si souhaité
+};
+
+const SYSTEMS = {
+  generic:{label:"Générique"},
+  daggerheart:{label:"Daggerheart"},
+  vampire_dark_ages:{label:"Vampire : L’Âge des Ténèbres"},
+  band_of_blades:{label:"Band of Blades"}
+};
+
+const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+let session=null, channelId=null, joinCode=null, channelName=null, gameSystem="generic", myRole="player";
+let realtimeRolls=null, realtimeMembers=null, history=[], favorites=[], myProfile=null, rollMode="system", genericGroups=[{count:1,sides:6,modifier:0}];
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){
+ const t=$("toast");
+ t.innerHTML=`<div>${esc(msg)}</div>`;
+ t.classList.add("show");
+ clearTimeout(window.__tt);
+ window.__tt=setTimeout(()=>t.classList.remove("show"),3200);
+}
+function showRollToast(r){
+ const t=$("toast");
+ const who=r.character_name||r.player_name||"Participant";
+ const name=r.roll_name||"Jet de dés";
+ const rollSystem=r.metadata?.game_system_key||r.roll_type||"generic";
+
+ if(rollSystem==="daggerheart"){
+   const d=daggerheartOutcome(r);
+   const extras=[
+     ...d.advantage.map(v=>`<span class="die adv">${esc(v)}</span>`),
+     ...d.disadvantage.map(v=>`<span class="die neg">${esc(v)}</span>`)
+   ].join("");
+   t.innerHTML=`
+     <div class="toast-total">${d.total}</div>
+     <div class="toast-name">${esc(name)}</div>
+     <div class="toast-detail" style="color:#dbe4eb;font-weight:850">${esc(rollConfigText(r))}</div>
+     <div class="toast-who">${esc(who)} · Daggerheart · Difficulté ${d.difficulty}</div>
+     <div class="dice-line">
+       <span class="die hope">${esc(d.hope)}</span>
+       <span class="die fear">${esc(d.fear)}</span>
+       ${extras}
+     </div>
+     <div class="toast-status ${d.critical?"dh-critical":d.success?"good":""}">${esc(d.status)}</div>
+     ${d.critical?`<div class="toast-detail">+1 Espoir · Effacez 1 Stress</div>`:""}`;
+ } else if(rollSystem==="vampire_dark_ages"){
+   const v=vampireOutcome(r);
+   const cls=v.kind==="success"?"good":v.kind==="botch"?"danger":"";
+   t.innerHTML=`
+     <div class="toast-total">${v.net}</div>
+     <div class="toast-name">${esc(name)}</div>
+     <div class="toast-detail" style="color:#dbe4eb;font-weight:850">${esc(rollConfigText(r))}</div>
+     <div class="toast-who">${esc(who)} · Vampire · Difficulté ${v.difficulty}</div>
+     <div class="dice-line">${v.vals.map(x=>`<span class="die ${x===1?"one":x>=v.difficulty?"success":""}">${esc(x)}</span>`).join("")}</div>
+     <div class="toast-status ${cls}">${esc(v.status)}</div>
+     <div class="toast-detail">Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}</div>`;
+ } else if(rollSystem==="band_of_blades"){
+   const b=bandOfBladesOutcome(r);
+   t.innerHTML=`
+     <div class="toast-total">${b.best}</div>
+     <div class="toast-name">${esc(name)}</div>
+     <div class="toast-detail" style="color:#dbe4eb;font-weight:850">${esc(rollConfigText(r))}</div>
+     <div class="toast-who">${esc(who)} · Band of Blades</div>
+     <div class="dice-line">${b.vals.map(v=>`<span class="die ${Number(v)===6?"success":""}">${esc(v)}</span>`).join("")}</div>
+     <div class="toast-status ${b.critical?"dh-critical":b.kind==="success"?"good":""}">${esc(b.status)}</div>
+     ${b.zeroDice?`<div class="toast-detail">0 dé : on conserve le plus faible → ${b.kept}</div>`:b.critical?`<div class="toast-detail">${b.sixes} résultats de 6</div>`:""}`;
+ } else {
+   const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+   t.innerHTML=`
+     <div class="toast-total">${esc(r.total)}</div>
+     <div class="toast-name">${esc(name)}</div>
+     <div class="toast-detail" style="color:#dbe4eb;font-weight:850">${esc(rollConfigText(r))}</div>
+     <div class="toast-who">${esc(who)} · ${esc(SYSTEMS[rollSystem]?.label||"Générique")}</div>
+     ${vals.length?`<div class="dice-line">${vals.map(v=>`<span class="die">${esc(v)}</span>`).join("")}</div>`:""}`;
+ }
+
+ t.classList.add("show");
+ clearTimeout(window.__tt);
+ window.__tt=setTimeout(()=>t.classList.remove("show"),6500);
+}
+function modal(title,html){$("modalTitle").textContent=title;$("modalBody").innerHTML=html;$("modal").classList.remove("hidden")}
+function closeModal(){$("modal").classList.add("hidden")}
+window.closeModal=closeModal;
+
+async function init(){
+  const {data:{session:existing}}=await supabase.auth.getSession();
+  if(existing) session=existing; else {
+    const {data,error}=await supabase.auth.signInAnonymously(); if(error) throw error; session=data.session;
+  }
+  const saved=JSON.parse(localStorage.getItem("udr_room")||"null");
+  if(saved?.channelId){Object.assign(windowState(),saved);$("resumeBtn").classList.remove("hidden")}
+}
+function windowState(){return {
+  set channelId(v){channelId=v},set joinCode(v){joinCode=v},set channelName(v){channelName=v},set gameSystem(v){gameSystem=v},set myRole(v){myRole=v}
+}}
+function saveRoom(){localStorage.setItem("udr_room",JSON.stringify({channelId,joinCode,channelName,gameSystem,myRole}))}
+function systemOptions(){return Object.entries(SYSTEMS).map(([k,v])=>`<option value="${k}">${esc(v.label)}</option>`).join("")}
+
+window.openCreate=()=>modal("Créer une table",`
+<label>Nom de la table</label><input id="mTableName" placeholder="Ma table">
+<label>Système de jeu</label><select id="mSystem">${systemOptions()}</select>
+<label>Nom du joueur</label><input id="mDisplayName" placeholder="Votre prénom / pseudo">
+<label><input id="mIsGm" type="checkbox" style="width:auto" onchange="toggleRoleFields()"> Je suis MJ</label>
+<div id="playerFields"><label>Nom du personnage</label><input id="mCharacterName" placeholder="Nom du personnage"><label>URL du portrait</label><input id="mAvatar" placeholder="https://..."></div>
+<div class="actions"><button class="btn primary" onclick="createRoom()">Créer</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
+
+window.openJoin=async()=>{
+ modal("Rejoindre une table",`
+ <label>Table ouverte</label>
+ <select id="mOpenTable" onchange="selectOpenTable()">
+   <option value="">Chargement des tables…</option>
+ </select>
+ <div id="mOpenTableInfo" class="muted" style="font-size:.7rem;margin-top:6px"></div>
+ <div style="display:flex;align-items:center;gap:10px;margin:14px 0 4px">
+   <div style="height:1px;background:var(--line);flex:1"></div>
+   <span class="muted" style="font-size:.68rem;font-weight:800">OU</span>
+   <div style="height:1px;background:var(--line);flex:1"></div>
+ </div>
+ <label>Code de la table</label><input id="mJoinCode" placeholder="ABC123" maxlength="12" oninput="clearOpenTableSelection()">
+ <label>Nom du joueur</label><input id="mDisplayName" placeholder="Votre prénom / pseudo">
+ <label><input id="mIsGm" type="checkbox" style="width:auto" onchange="toggleRoleFields()"> Je suis MJ</label>
+ <div id="playerFields"><label>Nom du personnage</label><input id="mCharacterName" placeholder="Nom du personnage"><label>URL du portrait</label><input id="mAvatar" placeholder="https://..."></div>
+ <div class="actions"><button class="btn primary" onclick="joinRoom()">Rejoindre</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
+ await loadOpenTables();
+};
+
+let openTables=[];
+
+async function loadOpenTables(){
+ const select=$("mOpenTable");
+ if(!select) return;
+ const {data,error}=await supabase.rpc("list_open_dice_channels");
+ if(error){
+   select.innerHTML='<option value="">Impossible de charger les tables</option>';
+   $("mOpenTableInfo").textContent=error.message||"Erreur de chargement";
+   return;
+ }
+ openTables=data||[];
+ select.innerHTML='<option value="">Sélectionner une table ouverte…</option>'+
+   openTables.map(t=>`<option value="${esc(t.join_code)}">${esc(t.channel_name)} — ${esc(SYSTEMS[t.game_system_key]?.label||t.game_system_key)} (${t.member_count} participant${Number(t.member_count)===1?"":"s"})</option>`).join("");
+ $("mOpenTableInfo").textContent=openTables.length?`${openTables.length} table${openTables.length>1?"s":""} ouverte${openTables.length>1?"s":""}.`:"Aucune table ouverte actuellement.";
+}
+
+window.selectOpenTable=()=>{
+ const code=$("mOpenTable")?.value||"";
+ const input=$("mJoinCode");
+ if(input) input.value=code;
+ const t=openTables.find(x=>x.join_code===code);
+ $("mOpenTableInfo").textContent=t
+   ? `${SYSTEMS[t.game_system_key]?.label||t.game_system_key} · ${t.member_count} participant${Number(t.member_count)===1?"":"s"} · code ${t.join_code}`
+   : (openTables.length?`${openTables.length} table${openTables.length>1?"s":""} ouverte${openTables.length>1?"s":""}.`:"Aucune table ouverte actuellement.");
+};
+
+window.clearOpenTableSelection=()=>{
+ const select=$("mOpenTable");
+ if(select && select.value) select.value="";
+};
+
+window.toggleRoleFields=()=>{$("playerFields")?.classList.toggle("hidden",$("mIsGm")?.checked)};
+
+window.createRoom=async()=>{
+ try{
+  const {data,error}=await supabase.rpc("create_dice_channel_v2",{
+    p_name:$("mTableName").value.trim(),p_game_system_key:$("mSystem").value,p_display_name:$("mDisplayName").value.trim(),
+    p_is_gm:$("mIsGm").checked,p_character_name:$("mCharacterName")?.value.trim()||null,p_avatar_url:$("mAvatar")?.value.trim()||null,p_metadata:{source:"universal_dice_roller"}
+  }); if(error) throw error;
+  const r=Array.isArray(data)?data[0]:data; await enterRoom(r.result_channel_id,r.result_join_code,r.result_name,r.result_game_system_key,r.result_role);
+ }catch(e){alert("Création impossible : "+(e.message||e))}
+};
+
+window.joinRoom=async()=>{
+ try{
+  const selectedCode=($("mOpenTable")?.value||"").trim();
+  const typedCode=($("mJoinCode")?.value||"").trim();
+  const joinValue=(selectedCode||typedCode).toUpperCase();
+  if(!joinValue) throw new Error("Sélectionnez une table ouverte ou saisissez son code.");
+  const {data,error}=await supabase.rpc("join_dice_channel_v2",{
+    p_join_code:joinValue,p_display_name:$("mDisplayName").value.trim(),p_is_gm:$("mIsGm").checked,
+    p_character_name:$("mCharacterName")?.value.trim()||null,p_avatar_url:$("mAvatar")?.value.trim()||null,p_metadata:{source:"universal_dice_roller"}
+  }); if(error) throw error;
+  const r=Array.isArray(data)?data[0]:data; await enterRoom(r.result_channel_id,r.result_join_code,r.result_name,r.result_game_system_key,r.result_role);
+ }catch(e){alert("Connexion impossible : "+(e.message||e))}
+};
+
+async function enterRoom(id,code,name,system,role){
+ channelId=id;joinCode=code;channelName=name;gameSystem=system||"generic";myRole=role||"player";saveRoom();closeModal();
+ $("homeView").classList.add("hidden");$("roomView").classList.remove("hidden");$("roomName").textContent=channelName;$("roomCode").textContent=joinCode;
+ $("systemLabel").textContent=SYSTEMS[gameSystem]?.label||gameSystem;$("headerSub").textContent=channelName;
+ renderSystemControls();await Promise.all([loadPeople(),loadHistory(),loadFavorites()]);await startRealtime();
+}
+window.resumeRoom=async()=>{const s=JSON.parse(localStorage.getItem("udr_room")||"null");if(s)await enterRoom(s.channelId,s.joinCode,s.channelName,s.gameSystem,s.myRole)};
+window.leaveRoom=async()=>{
+ try{if(channelId)await supabase.rpc("leave_dice_channel",{p_channel_id:channelId})}catch{}
+ await stopRealtime();localStorage.removeItem("udr_room");channelId=null;history=[];favorites=[];$("roomView").classList.add("hidden");$("homeView").classList.remove("hidden");$("resumeBtn").classList.add("hidden");$("headerSub").textContent="Lanceur partagé";
+};
+
+function setBaseDiceFieldsVisibility(showCount=true,showSides=true,showModifier=true){
+ const c=$("diceCount")?.closest("div");
+ const d=$("diceSides")?.closest("div");
+ const m=$("modifier")?.closest("div");
+ if(c) c.style.display=showCount?"":"none";
+ if(d) d.style.display=showSides?"":"none";
+ if(m) m.style.display=showModifier?"":"none";
+}
+
+function renderSystemControls(){
+ let h="";
+ setBaseDiceFieldsVisibility(true,true,true);
+ if(gameSystem==="generic"){
+   $("diceCount").min="1";
+   if(Number($("diceCount").value)<1) $("diceCount").value="1";
+   setBaseDiceFieldsVisibility(true,true,true);
+   rollMode="generic";
+   $("diceSides").disabled=false;
+   $("modifier").disabled=false;
+   syncBaseDiceToGeneric();
+   $("systemControls").innerHTML=`<div id="genericExtraDiceGroups" class="dice-groups"></div>
+      <div class="actions"><button class="btn small" onclick="addGenericDiceGroup()">+ Ajouter un dé</button></div>
+      <div id="genericSummary" class="generic-summary"></div>`;
+   setTimeout(renderGenericDiceGroups,0);
+   return;
+ }
+
+ h+=`<div class="roll-mode-switch">
+   <button class="roll-mode-btn ${rollMode==="system"?"active":""}" onclick="setRollMode('system')">${esc(SYSTEMS[gameSystem]?.label||"Système")}</button>
+   <button class="roll-mode-btn ${rollMode==="generic"?"active":""}" onclick="setRollMode('generic')">Jet libre</button>
+ </div>`;
+
+ if(rollMode==="generic"){
+   $("diceCount").min="1";
+   if(Number($("diceCount").value)<1) $("diceCount").value="1";
+   setBaseDiceFieldsVisibility(true,true,true);
+   $("diceSides").disabled=false;
+   $("modifier").disabled=false;
+   syncBaseDiceToGeneric();
+   h+=`<div id="genericExtraDiceGroups" class="dice-groups"></div>
+      <div class="actions"><button class="btn small" onclick="addGenericDiceGroup()">+ Ajouter un dé</button></div>
+      <div id="genericSummary" class="generic-summary"></div>`;
+   $("systemControls").innerHTML=h;
+   setTimeout(renderGenericDiceGroups,0);
+   return;
+ }
+
+ if(gameSystem==="daggerheart"){
+   setBaseDiceFieldsVisibility(false,false,true);
+   $("modifier").disabled=false;
+   h+=`<div class="dh-controls">
+      <div>
+        <label>Dé d'Espoir</label>
+        <select id="dhHopeSides">
+          <option value="12" selected>D12</option>
+          <option value="20">D20</option>
+        </select>
+      </div>
+      <div>
+        <label>Dé de Peur</label>
+        <select id="dhFearSides">
+          <option value="12" selected>D12</option>
+          <option value="20">D20</option>
+        </select>
+      </div>
+      <div>
+        <label>Difficulté</label>
+        <input id="dhDifficulty" type="number" min="1" max="40" value="15">
+      </div>
+      <div>
+        <label>Avantage / Désavantage</label>
+        <select id="dhAdvMode" onchange="toggleDhAdvCount()">
+          <option value="none" selected>Aucun</option>
+          <option value="advantage">Avantage (+D6)</option>
+          <option value="disadvantage">Désavantage (−D6)</option>
+        </select>
+      </div>
+    </div>
+    <div id="dhAdvCountWrap" class="hidden" style="margin-top:8px">
+      <label>Nombre de dés d'avantage / désavantage</label>
+      <input id="dhAdvCount" type="number" min="1" max="10" value="1">
+    </div>
+    <div class="muted" style="font-size:.7rem;margin-top:8px">
+      Le jet compare Espoir et Peur, puis le total à la difficulté. Une égalité des deux dés de Dualité est un succès critique.
+    </div>`;
+ }
+
+ if(gameSystem==="vampire_dark_ages"){
+   $("diceSides").value="10";
+   $("diceSides").disabled=true;
+   $("modifier").value="0";
+   $("modifier").disabled=true;
+   h+=`<div class="vamp-controls">
+        <div><label>Réserve de dés</label><div class="muted" style="font-size:.78rem;padding:11px 0">La valeur « Nombre » ci-dessus correspond à votre réserve de D10.</div></div>
+        <div><label>Difficulté</label><input id="vampDifficulty" type="number" min="2" max="10" value="6"></div>
+      </div>
+      <div class="vamp-hint">Vampire standard : chaque D10 ≥ difficulté = 1 succès ; chaque 1 annule un succès. Aucun succès + au moins un 1 = échec critique.</div>`;
+ } else {
+   $("diceSides").disabled=false;
+   $("modifier").disabled=false;
+ }
+
+ if(gameSystem==="band_of_blades"){
+   $("diceCount").min="0";
+   if(Number($("diceCount").value)<0) $("diceCount").value="0";
+   $("diceSides").value="6";
+   $("diceSides").disabled=true;
+   $("modifier").value="0";
+   $("modifier").disabled=true;
+   h+=`<div class="muted" style="font-size:.72rem;margin-top:10px">Band of Blades : le meilleur D6 est interprété automatiquement. À 0 dé, 2D6 sont lancés et seul le plus faible est conservé.</div>`;
+ }else{
+   $("diceCount").min="1";
+ }
+
+ $("systemControls").innerHTML=h;
+}
+
+window.toggleDhAdvCount=()=>{
+ const mode=$("dhAdvMode")?.value||"none";
+ $("dhAdvCountWrap")?.classList.toggle("hidden",mode==="none");
+};
+
+window.setRollMode=(mode)=>{
+ rollMode=mode==="generic"?"generic":"system";
+ renderSystemControls();
+};
+
+function syncBaseDiceToGeneric(){
+ const baseCount=Math.max(1,Number($("diceCount")?.value||1));
+ const baseSides=Math.max(2,Number($("diceSides")?.value||6));
+ const baseModifier=Number($("modifier")?.value||0);
+ if(!genericGroups.length) genericGroups=[{count:baseCount,sides:baseSides,modifier:baseModifier}];
+ genericGroups[0]={count:baseCount,sides:baseSides,modifier:baseModifier};
+}
+
+function renderGenericDiceGroups(){
+ syncBaseDiceToGeneric();
+ const box=$("genericExtraDiceGroups");
+ if(!box) return;
+
+ box.innerHTML=genericGroups.slice(1).map((g,offset)=>{
+   const i=offset+1;
+   return `<div class="dice-group-row" style="grid-template-columns:1fr 1fr 1fr auto">
+     <div><label>Nombre</label><input type="number" min="1" max="100" value="${Number(g.count)||1}" onchange="updateGenericGroup(${i},'count',this.value)"></div>
+     <div><label>Dé</label><select onchange="updateGenericGroup(${i},'sides',this.value)">
+       ${[2,4,6,8,10,12,20].map(d=>`<option value="${d}" ${Number(g.sides)===d?"selected":""}>D${d}</option>`).join("")}
+     </select></div>
+     <div><label>Mod.</label><input type="number" value="${Number(g.modifier)||0}" onchange="updateGenericGroup(${i},'modifier',this.value)"></div>
+     <button class="btn red small" onclick="removeGenericDiceGroup(${i})">×</button>
+   </div>`;
+ }).join("");
+
+ updateGenericSummary();
+}
+
+window.addGenericDiceGroup=()=>{
+ syncBaseDiceToGeneric();
+ genericGroups.push({count:1,sides:6,modifier:0});
+ renderGenericDiceGroups();
+};
+
+window.removeGenericDiceGroup=i=>{
+ if(i<=0 || !genericGroups[i]) return;
+ genericGroups.splice(i,1);
+ renderGenericDiceGroups();
+};
+
+window.updateGenericGroup=(i,key,value)=>{
+ if(!genericGroups[i]) return;
+ if(key==="modifier") genericGroups[i][key]=Number(value)||0;
+ else genericGroups[i][key]=Math.max(1,Number(value)||1);
+ updateGenericSummary();
+};
+
+function genericTotalModifier(){
+ syncBaseDiceToGeneric();
+ return genericGroups.reduce((sum,g)=>sum+(Number(g.modifier)||0),0);
+}
+
+function genericConfigFromGroups(groups){
+ let out="";
+ (groups||[]).forEach((g,i)=>{
+   const count=Math.max(1,Number(g.count)||1);
+   const sides=Math.max(2,Number(g.sides)||6);
+   const mod=Number(g.modifier)||0;
+   const die=`${count}D${sides}`;
+   if(i===0) out=die;
+   else out+=` + ${die}`;
+   if(mod) out+=` ${mod>0?"+":"−"} ${Math.abs(mod)}`;
+ });
+ return out||"Jet";
+}
+
+function updateGenericSummary(){
+ if(rollMode==="generic") syncBaseDiceToGeneric();
+ const el=$("genericSummary");
+ if(!el) return;
+ el.textContent=genericConfigFromGroups(genericGroups);
+}
+
+function currentDice(){
+ if(rollMode==="generic") return genericGroups.map((g,i)=>({label:`Dés ${i+1}`,count:Number(g.count),sides:Number(g.sides),sign:1}));
+ if(gameSystem==="daggerheart"){
+   const dice=[
+     {label:"Espoir",count:1,sides:Number($("dhHopeSides")?.value||12),sign:1},
+     {label:"Peur",count:1,sides:Number($("dhFearSides")?.value||12),sign:1}
+   ];
+   const mode=$("dhAdvMode")?.value||"none";
+   const count=Math.max(1,Number($("dhAdvCount")?.value||1));
+   if(mode==="advantage") dice.push({label:"Avantage",count,sides:6,sign:1});
+   if(mode==="disadvantage") dice.push({label:"Désavantage",count,sides:6,sign:-1});
+   return dice;
+ }
+ if(gameSystem==="vampire_dark_ages") return [{label:"Réserve",count:Number($("diceCount").value),sides:10,sign:1}];
+ if(gameSystem==="band_of_blades"){
+   const pool=Number($("diceCount").value);
+   return [{label:pool<=0?"Action 0 dé":"Action",count:pool<=0?2:pool,sides:6,sign:1}];
+ }
+ return [{label:"Dés",count:Number($("diceCount").value),sides:Number($("diceSides").value),sign:1}];
+}
+window.sendRoll=async(diceOverride=null,nameOverride=null,modOverride=null,metadataOverride=null,rollTypeOverride=null)=>{
+ try{
+  const effectiveSystem=rollTypeOverride || (rollMode==="generic"?"generic":gameSystem);
+  const dice=diceOverride||currentDice();
+  const genericMod = effectiveSystem==="generic"
+    ? (metadataOverride?.generic_groups
+        ? (metadataOverride.generic_groups||[]).reduce((sum,g)=>sum+(Number(g.modifier)||0),0)
+        : genericTotalModifier())
+    : 0;
+  const modifier=effectiveSystem==="vampire_dark_ages"||effectiveSystem==="band_of_blades"
+    ? 0
+    : (effectiveSystem==="generic" ? genericMod : (modOverride??Number($("modifier").value||0)));
+  const rollName=nameOverride||$("rollName").value.trim()||"Jet";
+  const metadata={
+    source:"universal_dice_roller",
+    game_system_key:effectiveSystem,
+    table_system_key:gameSystem,
+    ...(metadataOverride||{})
+  };
+  if(effectiveSystem==="generic" && !metadata.generic_groups){
+    metadata.generic_groups=genericGroups.map(g=>({count:Number(g.count),sides:Number(g.sides),modifier:Number(g.modifier)||0}));
+  }
+  if(effectiveSystem==="vampire_dark_ages" && metadata.difficulty==null) metadata.difficulty=Number($("vampDifficulty")?.value||6);
+  if(effectiveSystem==="band_of_blades" && metadata.zero_dice==null){
+    metadata.zero_dice=Number($("diceCount")?.value||0)<=0;
+  }
+  if(effectiveSystem==="daggerheart"){
+    if(metadata.difficulty==null) metadata.difficulty=Number($("dhDifficulty")?.value||15);
+    if(metadata.hope_sides==null) metadata.hope_sides=Number($("dhHopeSides")?.value||12);
+    if(metadata.fear_sides==null) metadata.fear_sides=Number($("dhFearSides")?.value||12);
+    if(metadata.advantage_mode==null) metadata.advantage_mode=$("dhAdvMode")?.value||"none";
+    if(metadata.advantage_count==null) metadata.advantage_count=Math.max(1,Number($("dhAdvCount")?.value||1));
+  }
+
+  const {data,error}=await supabase.functions.invoke("roll-dice",{body:{
+    channel_id:channelId,
+    project_key:"universal_dice_roller",
+    roll_name:rollName,
+    roll_type:effectiveSystem,
+    dice,
+    modifier,
+    metadata
+  }});
+  if(error) throw error;
+  if(!data?.ok) throw new Error(data?.error||"Jet invalide");
+  showResult(data.roll);
+ }catch(e){alert("Jet impossible : "+(e.message||e))}
+};
+
+function rollConfigText(r){
+ const rollSystem=r.metadata?.game_system_key||r.roll_type||"generic";
+ if(rollSystem==="band_of_blades" && r.metadata?.zero_dice) return "0 dé → 2D6, garder le plus faible";
+ if(rollSystem==="daggerheart") return daggerheartConfigText(r);
+ if(Array.isArray(r.metadata?.generic_groups) && r.metadata.generic_groups.length){
+   return genericConfigFromGroups(r.metadata.generic_groups);
+ }
+ const groups=(r.dice||[]).map(g=>{
+   const count=Number(g.count ?? (g.results||[]).length ?? 0);
+   const sides=Number(g.sides||0);
+   const sign=Number(g.sign??1);
+   if(!count || !sides) return "";
+   return `${sign<0?"− ":""}${count}D${sides}`;
+ }).filter(Boolean);
+
+ let text="";
+ groups.forEach((part,i)=>{
+   const negative=part.startsWith("− ");
+   const clean=negative?part.slice(2):part;
+   if(i===0) text+=(negative?"− ":"")+clean;
+   else text+=negative?` − ${clean}`:` + ${clean}`;
+ });
+
+ const mod=Number(r.modifier||0);
+ if(mod) text+=` ${mod>0?"+":"−"} ${Math.abs(mod)}`;
+ return text||"Jet";
+}
+
+function daggerheartOutcome(r){
+ const groups=Array.isArray(r.dice)?r.dice:[];
+ const hopeGroup=groups.find(g=>String(g.label||"").toLowerCase().includes("espoir"));
+ const fearGroup=groups.find(g=>String(g.label||"").toLowerCase().includes("peur"));
+ const advGroup=groups.find(g=>String(g.label||"").toLowerCase().includes("avantage") && !String(g.label||"").toLowerCase().includes("désavantage"));
+ const disGroup=groups.find(g=>String(g.label||"").toLowerCase().includes("désavantage"));
+
+ const hope=Number(hopeGroup?.results?.[0]||0);
+ const fear=Number(fearGroup?.results?.[0]||0);
+ const difficulty=Number(r.metadata?.difficulty||15);
+ const total=Number(r.total||0);
+ const critical=hope>0 && fear>0 && hope===fear;
+ const success=critical || total>=difficulty;
+ const withHope=critical || hope>fear;
+
+ let status,kind;
+ if(critical){status="SUCCÈS CRITIQUE";kind="critical";}
+ else if(success && withHope){status="SUCCÈS AVEC ESPOIR";kind="success";}
+ else if(success){status="SUCCÈS AVEC PEUR";kind="success";}
+ else if(withHope){status="ÉCHEC AVEC ESPOIR";kind="failure";}
+ else {status="ÉCHEC AVEC PEUR";kind="failure";}
+
+ return {
+   groups,hope,fear,difficulty,total,critical,success,withHope,status,kind,
+   advantage:(advGroup?.results||[]),
+   disadvantage:(disGroup?.results||[])
+ };
+}
+
+function daggerheartConfigText(r){
+ const groups=Array.isArray(r.dice)?r.dice:[];
+ const parts=[];
+ for(const g of groups){
+   const label=String(g.label||"");
+   const count=Number(g.count||1);
+   const sides=Number(g.sides||0);
+   const sign=Number(g.sign??1);
+   if(!sides) continue;
+   let text=`${count}D${sides}`;
+   if(label) text+=` ${label}`;
+   if(parts.length===0) parts.push(text);
+   else parts.push(`${sign<0?"−":"+"} ${text}`);
+ }
+ const mod=Number(r.modifier||0);
+ if(mod) parts.push(`${mod>0?"+":"−"} ${Math.abs(mod)}`);
+ return parts.join(" ")||"Jet Daggerheart";
+}
+
+function bandOfBladesOutcome(r){
+ const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+ const zeroDice=!!r.metadata?.zero_dice;
+ const kept=vals.length?(zeroDice?Math.min(...vals):Math.max(...vals)):0;
+ const sixes=vals.filter(v=>Number(v)===6).length;
+ const critical=!zeroDice && sixes>=2;
+
+ let status,kind;
+ if(critical){status="SUCCÈS CRITIQUE";kind="critical";}
+ else if(kept>=6){status="RÉUSSITE COMPLÈTE";kind="success";}
+ else if(kept>=4){status="RÉUSSITE PARTIELLE";kind="partial";}
+ else {status="ÉCHEC / CONSÉQUENCE";kind="failure";}
+
+ return {vals,best:kept,kept,sixes,critical,zeroDice,status,kind};
+}
+
+function vampireOutcome(r){
+ const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+ const difficulty=Math.max(2,Math.min(10,Number(r.metadata?.difficulty||6)));
+ const raw=vals.filter(v=>v>=difficulty).length;
+ const ones=vals.filter(v=>v===1).length;
+ const net=Math.max(0,raw-ones);
+ let status,kind;
+ if(net>0){status=`RÉUSSITE — ${net} SUCCÈS`;kind="success"}
+ else if(ones>0){status="ÉCHEC CRITIQUE";kind="botch"}
+ else {status="ÉCHEC";kind="failure"}
+ return {vals,difficulty,raw,ones,net,status,kind};
+}
+function interpret(r){
+ const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+ if(gameSystem==="generic") return `${vals.length} dé${vals.length>1?"s":""} lancé${vals.length>1?"s":""}.`;
+ if(gameSystem==="band_of_blades"){const best=Math.max(...vals);return best>=6?"6 : réussite complète":best>=4?`${best} : réussite partielle`:`${best} : échec / conséquence`;}
+ if(gameSystem==="vampire_dark_ages"){
+   const v=vampireOutcome(r);
+   return `${v.status} · Difficulté ${v.difficulty} · ${v.raw} succès brut${v.raw>1?"s":""} · ${v.ones} résultat${v.ones>1?"s":""} de 1.`;
+ }
+ return "Résultat reçu.";
+}
+function showResult(r){
+ $("resultHero").classList.remove("hidden");
+ $("resultName").innerHTML=`${esc(r.roll_name||"Jet")}<div class="vamp-detail" style="margin-top:4px">${esc(rollConfigText(r))}</div>`;
+ const rollSystem=r.metadata?.game_system_key||r.roll_type||"generic";
+ if(rollSystem==="daggerheart"){
+   const d=daggerheartOutcome(r);
+   $("resultTotal").textContent=d.total;
+   const extras=[
+     ...d.advantage.map(v=>`<span class="die adv">${esc(v)}</span>`),
+     ...d.disadvantage.map(v=>`<span class="die neg">${esc(v)}</span>`)
+   ].join("");
+   $("resultInterpret").innerHTML=`
+     <div class="dice-line" style="justify-content:center">
+       <span class="die hope">${esc(d.hope)}</span>
+       <span class="die fear">${esc(d.fear)}</span>
+       ${extras}
+     </div>
+     <div class="dh-status ${d.critical?"dh-critical":d.success?"good":""}">${esc(d.status)}</div>
+     <div class="vamp-detail">Espoir : ${d.hope} · Peur : ${d.fear} · Difficulté : ${d.difficulty} · Total : ${d.total}</div>
+     ${d.critical?`<div class="vamp-detail">+1 Espoir · Effacez 1 Stress</div>`:""}`;
+ }else if(rollSystem==="vampire_dark_ages"){
+   const v=vampireOutcome(r);
+   $("resultTotal").textContent=v.net;
+   $("resultInterpret").innerHTML=`<div class="dice-line" style="justify-content:center">${v.vals.map(x=>`<span class="die ${x===1?"one":x>=v.difficulty?"success":""}">${esc(x)}</span>`).join("")}</div>
+     <div class="vamp-status ${v.kind==="success"?"good":v.kind==="botch"?"danger":""}">${esc(v.status)}</div>
+     <div class="vamp-detail">Difficulté ${v.difficulty} · Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}</div>`;
+ }else if(rollSystem==="band_of_blades"){
+   const b=bandOfBladesOutcome(r);
+   $("resultTotal").textContent=b.best;
+   $("resultInterpret").innerHTML=`
+     <div class="dice-line" style="justify-content:center">${b.vals.map(v=>`<span class="die ${Number(v)===6?"success":""}">${esc(v)}</span>`).join("")}</div>
+     <div class="dh-status ${b.critical?"dh-critical":b.kind==="success"?"good":""}">${esc(b.status)}</div>
+     <div class="vamp-detail">${b.zeroDice?`Dé conservé (le plus faible) : ${b.kept}`:`Meilleur dé : ${b.best}`}${b.critical?` · ${b.sixes} résultats de 6`:""} · ${esc(rollConfigText(r))}</div>`;
+ }else{
+   $("resultTotal").textContent=r.total;
+   const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+   $("resultInterpret").innerHTML=`<div class="dice-line" style="justify-content:center">${vals.map(v=>`<span class="die">${esc(v)}</span>`).join("")}</div>
+     <div class="vamp-detail">${esc(SYSTEMS[rollSystem]?.label||"Jet libre")} · Total : ${esc(r.total)}</div>`;
+ }
+}
+async function loadPeople(){
+ const {data,error}=await supabase.rpc("get_dice_channel_participants",{p_channel_id:channelId});
+ if(error){toast("Participants indisponibles");return}
+
+ myProfile=(data||[]).find(p=>p.user_id===session?.user?.id)||null;
+
+ $("people").innerHTML=(data||[]).map(p=>{
+   if(p.role==="gm"){
+     return `<div class="person"><div class="person-info" style="display:flex;align-items:center;gap:7px"><span class="gm-tag" style="margin:0">MJ</span><div><div class="char">Maître de jeu</div><div class="player">(${esc(p.display_name||"Joueur")})</div></div></div></div>`;
+   }
+
+   const isMe=p.user_id===session?.user?.id;
+   const hasAvatar=!!p.avatar_url;
+
+   return `<div class="person">
+     <div class="portrait ${isMe&&!hasAvatar?"editable":""}" ${isMe&&!hasAvatar?'onclick="openMyProfile()" title="Ajouter une image à mon personnage"':""}>
+       ${hasAvatar
+         ? `<img src="${esc(p.avatar_url)}" onerror="this.outerHTML='<div class=&quot;portrait-fallback&quot;>♟</div>'">`
+         : `<div class="portrait-fallback">♟</div>`}
+     </div>
+     <div class="person-info">
+       <div class="char">${esc(p.character_name||"Personnage")}</div>
+       <div class="player">(${esc(p.display_name||"Joueur")}) ${isMe?`<button class="profile-mini" onclick="openMyProfile()">Modifier</button>`:""}</div>
+     </div>
+   </div>`;
+ }).join("");
+
+ $("mobilePeople").innerHTML=(data||[]).map(p=>{
+   const isMe=p.user_id===session?.user?.id;
+   return `<div class="mobile-person">
+     ${p.role==="gm"
+       ? `<span class="gm-tag">MJ</span> `
+       : `<strong>${esc(p.character_name||"Personnage")}</strong> `}
+     <span class="muted">(${esc(p.display_name||"Joueur")})</span>
+     ${isMe?`<button class="profile-mini" onclick="openMyProfile()">Modifier</button>`:""}
+   </div>`;
+ }).join("");
+}
+
+window.openMyProfile=()=>{
+ if(!myProfile) return;
+ if(myProfile.role==="gm"){
+   modal("Modifier mon profil",`
+     <label>Nom du joueur</label>
+     <input id="profileDisplayName" value="${esc(myProfile.display_name||"")}">
+     <div class="actions">
+       <button class="btn primary" onclick="saveMyProfile()">Enregistrer</button>
+       <button class="btn" onclick="closeModal()">Annuler</button>
+     </div>`);
+   return;
+ }
+
+ modal("Modifier mon personnage",`
+   <label>Nom du joueur</label>
+   <input id="profileDisplayName" value="${esc(myProfile.display_name||"")}">
+
+   <label>Nom du personnage</label>
+   <input id="profileCharacterName" value="${esc(myProfile.character_name||"")}">
+
+   <label>URL de l'image</label>
+   <input id="profileAvatarUrl" value="${esc(myProfile.avatar_url||"")}" placeholder="https://...">
+
+   <div class="muted" style="font-size:.7rem;margin-top:7px">
+     L'image reste hébergée sur le site de votre choix. Universal Dice Roller n'enregistre que son URL.
+   </div>
+
+   <div class="actions">
+     <button class="btn primary" onclick="saveMyProfile()">Enregistrer</button>
+     <button class="btn" onclick="closeModal()">Annuler</button>
+   </div>`);
+};
+
+window.saveMyProfile=async()=>{
+ try{
+   if(!myProfile) throw new Error("Profil introuvable.");
+
+   const displayName=$("profileDisplayName")?.value.trim()||"";
+   const characterName=myProfile.role==="gm"?null:($("profileCharacterName")?.value.trim()||null);
+   const avatarUrl=myProfile.role==="gm"?null:($("profileAvatarUrl")?.value.trim()||null);
+
+   if(!displayName) throw new Error("Le nom du joueur est obligatoire.");
+   if(myProfile.role!=="gm" && !characterName) throw new Error("Le nom du personnage est obligatoire.");
+   if(avatarUrl && !/^https?:\/\//i.test(avatarUrl)) throw new Error("L'URL de l'image doit commencer par http:// ou https://");
+
+   const {data,error}=await supabase.rpc("update_my_dice_channel_profile",{
+     p_channel_id:channelId,
+     p_display_name:displayName,
+     p_character_name:characterName,
+     p_avatar_url:avatarUrl
+   });
+
+   if(error) throw error;
+
+   const row=Array.isArray(data)?data[0]:data;
+   if(row) myProfile=row;
+
+   closeModal();
+   await loadPeople();
+   toast("Profil mis à jour");
+ }catch(e){
+   alert("Modification impossible : "+(e.message||e));
+ }
+};
+
+async function loadHistory(){
+ const {data,error}=await supabase.from("dice_rolls").select("*").eq("channel_id",channelId).order("created_at",{ascending:false}).limit(50);if(error)return;
+ history=data||[];renderHistory();
+}
+function renderHistory(){
+ if(!history.length){$("history").innerHTML=`<div class="muted">Aucun jet.</div>`;return;}
+ $("history").innerHTML=history.map(r=>{
+   const rollSystem=r.metadata?.game_system_key||r.roll_type||"generic";
+   if(rollSystem==="daggerheart"){
+     const d=daggerheartOutcome(r);
+     const extras=[
+       ...d.advantage.map(v=>`<span class="die adv">${esc(v)}</span>`),
+       ...d.disadvantage.map(v=>`<span class="die neg">${esc(v)}</span>`)
+     ].join("");
+     return `<div class="roll">
+       <div class="roll-head">
+         <div>
+           <div class="roll-title">${esc(r.roll_name||"Jet")}</div>
+           <div class="roll-sub">${esc(r.character_name||r.player_name||"Participant")} · ${esc(rollConfigText(r))} · Diff. ${d.difficulty} · ${new Date(r.created_at).toLocaleTimeString()}</div>
+         </div>
+         <div class="roll-total">${d.total}</div>
+       </div>
+       <div class="dice-line">
+         <span class="die hope">${esc(d.hope)}</span>
+         <span class="die fear">${esc(d.fear)}</span>
+         ${extras}
+       </div>
+       <div class="dh-status ${d.critical?"dh-critical":d.success?"good":""}" style="font-size:.8rem">${esc(d.status)}</div>
+       ${d.critical?`<div class="roll-sub">+1 Espoir · Effacez 1 Stress</div>`:""}
+     </div>`;
+   }
+   if(rollSystem==="vampire_dark_ages"){
+     const v=vampireOutcome(r);
+     const cls=v.kind==="success"?"good":v.kind==="botch"?"danger":"";
+     return `<div class="roll">
+       <div class="roll-head">
+         <div>
+           <div class="roll-title">${esc(r.roll_name||"Jet")}</div>
+           <div class="roll-sub">${esc(r.character_name||r.player_name||"Participant")} · ${esc(rollConfigText(r))} · Vampire · Diff. ${v.difficulty} · ${new Date(r.created_at).toLocaleTimeString()}</div>
+         </div>
+         <div class="roll-total">${v.net}</div>
+       </div>
+       <div class="dice-line">${v.vals.map(x=>`<span class="die ${x===1?"one":x>=v.difficulty?"success":""}">${esc(x)}</span>`).join("")}</div>
+       <div class="vamp-status ${cls}" style="font-size:.8rem">${esc(v.status)}</div>
+       <div class="roll-sub">Succès bruts : ${v.raw} · 1 : ${v.ones} · Succès nets : ${v.net}</div>
+     </div>`;
+   }
+   if(rollSystem==="band_of_blades"){
+     const b=bandOfBladesOutcome(r);
+     return `<div class="roll"><div class="roll-head"><div><div class="roll-title">${esc(r.roll_name||"Jet")}</div><div class="roll-sub">${esc(r.character_name||r.player_name||"Participant")} · ${esc(rollConfigText(r))} · Band of Blades · ${new Date(r.created_at).toLocaleTimeString()}</div></div><div class="roll-total">${b.best}</div></div><div class="dice-line">${b.vals.map(v=>`<span class="die ${Number(v)===6?"success":""}">${esc(v)}</span>`).join("")}</div><div class="dh-status ${b.critical?"dh-critical":b.kind==="success"?"good":""}" style="font-size:.8rem">${esc(b.status)}</div>${b.zeroDice?`<div class="roll-sub">0 dé : résultat conservé = ${b.kept} (le plus faible)</div>`:b.critical?`<div class="roll-sub">${b.sixes} résultats de 6</div>`:""}</div>`;
+   }
+   return `<div class="roll"><div class="roll-head"><div><div class="roll-title">${esc(r.roll_name||"Jet")}</div><div class="roll-sub">${esc(r.character_name||r.player_name||"Participant")} · ${esc(rollConfigText(r))} · ${esc(SYSTEMS[rollSystem]?.label||"Générique")} · ${new Date(r.created_at).toLocaleTimeString()}</div></div><div class="roll-total">${esc(r.total)}</div></div>${(r.dice||[]).map(g=>`<div class="dice-line">${(g.results||[]).map(v=>`<span class="die ${g.sign===-1?"neg":""}">${esc(v)}</span>`).join("")}</div>`).join("")}</div>`;
+ }).join("");
+}
+
+async function loadFavorites(){
+ const {data,error}=await supabase.rpc("get_my_dice_roll_favorites",{p_channel_id:channelId});if(error)return;favorites=data||[];renderFavorites();
+}
+function favoriteConfig(f){
+ const parts=(Array.isArray(f.dice)?f.dice:[]).map(g=>`${Number(g.count||0)}D${Number(g.sides||0)}${Number(g.sign)===-1?" soustrait":""}`);
+ const mod=Number(f.modifier||0);
+ let config=(parts.length?parts.join(" + ").replace("+ 1D","+ 1D"):"Jet")+(mod?` ${mod>0?"+":"−"} ${Math.abs(mod)}`:"");
+ const fs=f.metadata?.game_system_key||f.roll_type||"generic";
+ if(fs==="vampire_dark_ages") config+=` · Diff. ${Number(f.metadata?.difficulty||6)}`;
+ if(fs==="daggerheart"){
+   const fake={dice:f.dice||[],modifier:f.modifier||0,metadata:f.metadata||{},roll_type:"daggerheart"};
+   config=`${daggerheartConfigText(fake)} · Diff. ${Number(f.metadata?.difficulty||15)}`;
+ }
+ return config;
+}
+function renderFavorites(){
+ if(!favorites.length){
+   $("favorites").innerHTML=`<div class="fav-empty">Aucun jet enregistré. Configurez un jet puis utilisez « Enregistrer ce jet ».</div>`;
+   return;
+ }
+ $("favorites").innerHTML=favorites.map(f=>`<div class="fav"><button class="fav-run" onclick="runFavorite('${f.id}')"><span class="fav-name">🎲 ${esc(f.name)}</span><span class="fav-config">${esc(favoriteConfig(f))}</span></button><button class="fav-del" onclick="deleteFavorite('${f.id}')" title="Supprimer">×</button></div>`).join("");
+}
+window.saveFavorite=async()=>{
+ const name=$("rollName").value.trim()||"Jet";try{
+  const effectiveSystem=rollMode==="generic"?"generic":gameSystem;
+  const metadata={game_system_key:effectiveSystem,table_system_key:gameSystem};
+  if(effectiveSystem==="vampire_dark_ages") metadata.difficulty=Number($("vampDifficulty")?.value||6);
+  if(effectiveSystem==="band_of_blades"){
+    metadata.zero_dice=Number($("diceCount")?.value||0)<=0;
+  }
+  if(effectiveSystem==="daggerheart"){
+    metadata.difficulty=Number($("dhDifficulty")?.value||15);
+    metadata.hope_sides=Number($("dhHopeSides")?.value||12);
+    metadata.fear_sides=Number($("dhFearSides")?.value||12);
+    metadata.advantage_mode=$("dhAdvMode")?.value||"none";
+    metadata.advantage_count=Math.max(1,Number($("dhAdvCount")?.value||1));
+  }
+  if(effectiveSystem==="generic"){
+    syncBaseDiceToGeneric();
+    metadata.generic_groups=genericGroups.map(g=>({count:Number(g.count),sides:Number(g.sides),modifier:Number(g.modifier)||0}));
+  }
+  const modifier=effectiveSystem==="vampire_dark_ages"||effectiveSystem==="band_of_blades"
+    ? 0
+    : (effectiveSystem==="generic" ? genericTotalModifier() : Number($("modifier").value||0));
+  const {error}=await supabase.rpc("save_dice_roll_favorite",{p_channel_id:channelId,p_name:name,p_dice:currentDice(),p_modifier:modifier,p_roll_type:effectiveSystem,p_metadata:metadata});if(error)throw error;await loadFavorites();toast("Favori enregistré");
+ }catch(e){alert("Favori impossible : "+(e.message||e))}
+};
+window.runFavorite=id=>{
+ const f=favorites.find(x=>x.id===id);if(!f)return;
+ const favSystem=f.metadata?.game_system_key||f.roll_type||"generic";
+ rollMode=favSystem==="generic"?"generic":"system";
+ if(favSystem==="generic"){
+   if(Array.isArray(f.metadata?.generic_groups) && f.metadata.generic_groups.length){
+     genericGroups=f.metadata.generic_groups.map(g=>({
+       count:Number(g.count||1),
+       sides:Number(g.sides||6),
+       modifier:Number(g.modifier)||0
+     }));
+   }else{
+     genericGroups=(f.dice||[]).map((g,i)=>({
+       count:Number(g.count??(g.results||[]).length??1),
+       sides:Number(g.sides||6),
+       modifier:i===0?Number(f.modifier||0):0
+     }));
+   }
+   if(!genericGroups.length) genericGroups=[{count:1,sides:6,modifier:0}];
+   $("diceCount").value=Number(genericGroups[0].count||1);
+   $("diceSides").value=Number(genericGroups[0].sides||6);
+   $("modifier").value=Number(genericGroups[0].modifier||0);
+ }
+ renderSystemControls();
+ if(favSystem==="band_of_blades"){
+   $("diceCount").value=f.metadata?.zero_dice?0:Number(f.dice?.[0]?.count||1);
+ }
+ if(favSystem==="daggerheart"){
+   if($("dhHopeSides")) $("dhHopeSides").value=String(Number(f.metadata?.hope_sides||12));
+   if($("dhFearSides")) $("dhFearSides").value=String(Number(f.metadata?.fear_sides||12));
+   if($("dhDifficulty")) $("dhDifficulty").value=Number(f.metadata?.difficulty||15);
+   if($("dhAdvMode")) $("dhAdvMode").value=f.metadata?.advantage_mode||"none";
+   if($("dhAdvCount")) $("dhAdvCount").value=Math.max(1,Number(f.metadata?.advantage_count||1));
+   toggleDhAdvCount();
+ }
+ if(favSystem==="vampire_dark_ages" && $("vampDifficulty")) $("vampDifficulty").value=Number(f.metadata?.difficulty||6);
+ sendRoll(f.dice,f.name,f.modifier,f.metadata||{},favSystem);
+};
+window.deleteFavorite=async id=>{if(!confirm("Supprimer ce favori ?"))return;const {error}=await supabase.rpc("delete_my_dice_roll_favorite",{p_favorite_id:id});if(!error){await loadFavorites();toast("Favori supprimé")}};
+
+function rollToastText(r){
+ const who=r.character_name||r.player_name||"Un participant";
+ const name=r.roll_name||"Jet de dés";
+ const rollSystem=r.metadata?.game_system_key||r.roll_type||"generic";
+ if(rollSystem==="vampire_dark_ages"){
+   const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+   const difficulty=Math.max(2,Math.min(10,Number(r.metadata?.difficulty||6)));
+   const raw=vals.filter(v=>v>=difficulty).length;
+   const ones=vals.filter(v=>v===1).length;
+   const net=Math.max(0,raw-ones);
+   const outcome=net>0?`${net} succès`:ones>0?"ÉCHEC CRITIQUE":"ÉCHEC";
+   return `${who} · ${name} : ${outcome}`;
+ }
+ if(rollSystem==="band_of_blades"){
+   const vals=(r.dice||[]).flatMap(g=>g.results||[]);
+   const best=vals.length?Math.max(...vals):0;
+   return `${who} · ${name} : ${best}`;
+ }
+ return `${who} · ${name} : ${r.total}`;
+}
+
+async function startRealtime(){
+ await stopRealtime();
+ realtimeRolls=supabase.channel("rolls-"+channelId+"-"+Math.random()).on("postgres_changes",{event:"INSERT",schema:"public",table:"dice_rolls",filter:`channel_id=eq.${channelId}`},p=>{if(!history.some(r=>r.id===p.new.id))history.unshift(p.new);history=history.slice(0,50);renderHistory();showResult(p.new);showRollToast(p.new)}).subscribe();
+ realtimeMembers=supabase.channel("members-"+channelId+"-"+Math.random()).on("postgres_changes",{event:"*",schema:"public",table:"dice_channel_members",filter:`channel_id=eq.${channelId}`},()=>loadPeople()).subscribe();
+}
+async function stopRealtime(){if(realtimeRolls)await supabase.removeChannel(realtimeRolls);if(realtimeMembers)await supabase.removeChannel(realtimeMembers);realtimeRolls=realtimeMembers=null}
+
+$("adminBtn").onclick=()=>modal("Administration",`<div class="muted" style="font-size:.76rem;margin-bottom:8px">Garde-fou local. Ce mot de passe n'est pas une sécurité forte.</div><label>Mot de passe</label><input id="adminPass" type="password"><div class="actions"><button class="btn primary" onclick="unlockAdmin()">Ouvrir</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
+window.unlockAdmin=()=>{if($("adminPass").value!==CONFIG.ADMIN_PASSWORD){toast("Mot de passe incorrect");return}renderAdmin()};
+async function renderAdmin(){
+ const {data,error}=await supabase.rpc("admin_list_dice_channels");if(error){alert(error.message);return}
+ modal("Administration des tables",`<div class="admin-list">${(data||[]).map(c=>`<div class="admin-table"><div class="admin-row"><div><strong>${esc(c.channel_name)}</strong><div class="muted" style="font-size:.68rem">${esc(SYSTEMS[c.game_system_key]?.label||c.game_system_key)} · <span class="code">${esc(c.join_code)}</span> · ${c.member_count} membre(s) · ${c.roll_count} jet(s)</div></div><span class="${c.active?"good":"danger"}">${c.active?"ACTIVE":"INACTIVE"}</span></div><div class="actions"><button class="btn small" onclick="adminMembers('${c.channel_id}')">Participants</button><button class="btn small" onclick="adminToggle('${c.channel_id}',${!c.active})">${c.active?"Désactiver":"Réactiver"}</button><button class="btn red small" onclick="adminDelete('${c.channel_id}','${esc(c.channel_name).replace(/'/g,"&#39;")}')">Supprimer</button></div><div id="am-${c.channel_id}"></div></div>`).join("")||`<div class="muted">Aucune table.</div>`}</div><div class="actions"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}
+window.adminToggle=async(id,active)=>{if(!confirm(active?"Réactiver cette table ?":"Désactiver cette table ?"))return;await supabase.rpc("admin_set_dice_channel_active",{p_channel_id:id,p_active:active});renderAdmin()};
+window.adminDelete=async(id,name)=>{if(!confirm(`Supprimer définitivement « ${name} » et tout son historique ?`))return;await supabase.rpc("admin_delete_dice_channel",{p_channel_id:id});renderAdmin()};
+window.adminMembers=async id=>{
+ const {data,error}=await supabase.rpc("admin_list_dice_channel_members",{p_channel_id:id});if(error)return;
+ $("am-"+id).innerHTML=(data||[]).map(m=>`<div class="member-row"><div><strong>${esc(m.role==="gm"?"MJ":m.character_name||"Joueur")}</strong> <span class="muted">(${esc(m.display_name)})</span></div><div><button class="btn small" onclick="adminRole('${id}','${m.user_id}','${m.role==="gm"?"player":"gm"}')">${m.role==="gm"?"→ Joueur":"→ MJ"}</button> <button class="btn red small" onclick="adminRemove('${id}','${m.user_id}')">Retirer</button></div></div>`).join("");
+};
+window.adminRole=async(cid,uid,role)=>{await supabase.rpc("admin_set_dice_channel_member_role",{p_channel_id:cid,p_user_id:uid,p_role:role});adminMembers(cid)};
+window.adminRemove=async(cid,uid)=>{if(!confirm("Retirer ce participant ?"))return;await supabase.rpc("admin_remove_dice_channel_member",{p_channel_id:cid,p_user_id:uid});adminMembers(cid)};
+
+init().catch(e=>alert("Initialisation impossible : "+e.message));
+</script>
+</body>
+</html>
