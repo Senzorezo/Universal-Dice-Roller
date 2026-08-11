@@ -53,8 +53,11 @@ label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 
 </head>
 <body>
 <header>
-  <div class="brand">🎲 Universal Dice Roller<small id="headerSub">Lanceur partagé</small></div>
-  <button class="icon-btn" id="adminBtn" title="Administration">⚙</button>
+  <div class="brand">🎲 Universal Dice Roller<small id="headerSub"></small></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+    <span class="muted" style="font-size:.67rem;font-weight:800;letter-spacing:.04em;white-space:nowrap">Version 1.42</span>
+    <button class="icon-btn" id="adminBtn" title="Administration">⚙</button>
+  </div>
 </header>
 
 <main>
@@ -62,7 +65,6 @@ label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 
     <div class="card home-box">
       <h1 class="home-title">Universal Dice Roller</h1>
       <div class="home-sub">Créez une table ou rejoignez votre groupe avec son code.</div>
-      <div class="muted" style="text-align:center;font-size:.66rem;font-weight:800;margin-top:7px;letter-spacing:.04em">Version 1.41</div>
       <div class="home-actions">
         <button class="btn primary" onclick="openCreate()">Créer une table</button>
         <button class="btn" onclick="openJoin()">Rejoindre une table</button>
@@ -378,7 +380,7 @@ function clearRoomState({keepViews=false}={}){
    $("roomView").classList.add("hidden");
    $("homeView").classList.remove("hidden");
    $("resumeBtn").classList.add("hidden");
-   $("headerSub").textContent="Lanceur partagé";
+   $("headerSub").textContent="";
  }
 }
 function systemOptions(){
