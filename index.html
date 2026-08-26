@@ -40,11 +40,13 @@ label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 
 .modal{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:16px;z-index:100}.modal-box{width:min(540px,100%);max-height:90vh;overflow:auto}
 .admin-list{display:grid;gap:10px}.admin-table{border:1px solid var(--line);border-radius:11px;padding:11px;background:#0c161f}.admin-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.member-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid #223344;font-size:.75rem}
 .toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,34px) scale(.98);opacity:0;pointer-events:none;background:radial-gradient(circle at top,#2a251c,#111820 68%);border:1px solid #5f4c2d;border-radius:14px;padding:14px 16px;box-shadow:0 18px 46px rgba(0,0,0,.48);z-index:200;transition:.22s;max-width:calc(100vw - 24px);width:min(430px,calc(100vw - 24px));text-align:center}.toast.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto;cursor:pointer}.toast .toast-total{font-size:2.4rem;font-weight:950;color:var(--accent2);line-height:1}.toast .toast-name{font-weight:900;margin-top:5px}.toast .toast-who{font-size:.7rem;color:var(--muted);margin-top:3px}.toast .toast-status{font-size:.95rem;font-weight:950;margin-top:8px}.toast .toast-detail{font-size:.72rem;color:var(--muted);margin-top:5px}.toast .dice-line{justify-content:center}.toast-progress{position:absolute;left:8px;right:8px;bottom:5px;height:2px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08)}.toast-progress-bar{height:100%;width:100%;background:var(--accent2);transform-origin:left center}.toast.show .toast-progress-bar{animation:toastCountdown var(--toast-duration,6.5s) linear forwards}@keyframes toastCountdown{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.table-counters{margin-bottom:12px;overflow:hidden}.counter-bar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}.counter-bar-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:900}.counter-list{display:flex;gap:8px;overflow-x:auto;padding:10px 12px}.counter-card{flex:0 0 auto;min-width:150px;border:1px solid #3b5065;border-radius:11px;background:#0c1721;padding:9px}.counter-name{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#dbe4eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}.counter-value{font-size:1.75rem;font-weight:950;color:var(--accent2);line-height:1.15;text-align:center;margin:7px 0}.counter-controls{display:grid;grid-template-columns:38px 1fr 38px;gap:6px;align-items:center}.counter-controls .btn{padding:6px 8px}.counter-edit{display:flex;justify-content:center;margin-top:6px}.counter-empty{font-size:.72rem;color:var(--muted);padding:4px 0}.counter-player .counter-value{margin-bottom:1px}
 .mobile-people{display:none}
 @media(max-width:980px){.room-grid{grid-template-columns:180px minmax(0,1fr)}.history-card{grid-column:2}.room-grid>.people-card{grid-row:1 / span 2}}
 @media(max-width:700px){
   header{height:54px}main{padding:10px}.home{min-height:calc(100vh - 74px)}.home-box{padding:16px}.home-actions{grid-template-columns:1fr}
   .room-top{align-items:flex-start}.room-grid{display:block}.people-card{display:none}.history-card{margin-top:10px}.portrait{display:none}
+  .table-counters{margin-bottom:10px}.counter-list{padding:9px 10px}.counter-card{min-width:132px}.counter-value{font-size:1.55rem}
   .mobile-people{display:flex;gap:6px;overflow:auto;margin-bottom:10px;padding-bottom:2px}.mobile-person{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:.67rem;background:#101d29}.mobile-person strong{text-transform:uppercase}
   .dice-builder{grid-template-columns:1fr 1fr}.dice-builder .wide{grid-column:1/-1}.dice-builder .roll-btn{grid-column:1/-1;padding:13px}
   .card-h{padding:10px 12px}.card-b{padding:12px}.result-total{font-size:2.5rem}.history{max-height:none}.room-title{font-size:.98rem}
@@ -55,7 +57,7 @@ label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 
 <header>
   <div class="brand">🎲 Universal Dice Roller<small id="headerSub"></small></div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
-    <span class="muted" style="font-size:.67rem;font-weight:800;letter-spacing:.04em;white-space:nowrap">Version 1.42</span>
+    <span class="muted" style="font-size:.67rem;font-weight:800;letter-spacing:.04em;white-space:nowrap">Version 1.43</span>
     <button class="icon-btn" id="adminBtn" title="Administration">⚙</button>
   </div>
 </header>
@@ -82,6 +84,14 @@ label{display:block;font-size:.72rem;font-weight:750;color:#c5d0d9;margin:9px 0 
         <div class="room-meta"><span id="systemLabel">Générique</span> · code <span id="roomCode" class="code">------</span></div>
       </div>
       <button class="btn small" onclick="leaveRoom()">Quitter</button>
+    </div>
+
+    <div id="tableCounters" class="card table-counters hidden">
+      <div class="counter-bar-head">
+        <div class="counter-bar-title">Compteurs de table</div>
+        <button id="counterAddBtn" class="btn small hidden" onclick="openCreateCounter()">+ Ajouter</button>
+      </div>
+      <div id="counterList" class="counter-list"><div class="counter-empty">Aucun compteur.</div></div>
     </div>
 
     <div id="mobilePeople" class="mobile-people"></div>
@@ -158,7 +168,7 @@ const SYSTEMS = {
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 let session=null, channelId=null, joinCode=null, channelName=null, gameSystem="generic", myRole="player";
-let realtimeRolls=null, realtimeMembers=null, history=[], favorites=[], myProfile=null, rollMode="system", genericGroups=[{count:1,sides:6,modifier:0}];
+let realtimeRolls=null, realtimeMembers=null, realtimeCounters=null, history=[], favorites=[], counters=[], myProfile=null, rollMode="system", genericGroups=[{count:1,sides:6,modifier:0}];
 let rerollBaseRoll=null, rerollSelection=new Set();
 const systemUiState={vampire:{difficulty:6,specialty:false}};
 window.systemUiState=systemUiState;
@@ -369,12 +379,16 @@ function clearRoomState({keepViews=false}={}){
  myRole="player";
  history=[];
  favorites=[];
+ counters=[];
  myProfile=null;
  rerollBaseRoll=null;
  rerollSelection.clear();
  systemUiState.vampire.difficulty=6;
  systemUiState.vampire.specialty=false;
  resetRoomVisualState();
+ if($("tableCounters")) $("tableCounters").classList.add("hidden");
+ if($("counterList")) $("counterList").innerHTML='<div class="counter-empty">Aucun compteur.</div>';
+ if($("counterAddBtn")) $("counterAddBtn").classList.add("hidden");
 
  if(!keepViews){
    $("roomView").classList.add("hidden");
@@ -514,7 +528,7 @@ async function enterRoom(id,code,name,system,role){
  $("headerSub").textContent=channelName;
 
  renderSystemControls();
- await Promise.all([loadPeople(),loadHistory(),loadFavorites()]);
+ await Promise.all([loadPeople(),loadHistory(),loadFavorites(),loadCounters()]);
  await startRealtime();
 }
 window.resumeRoom=async()=>{
@@ -1562,11 +1576,153 @@ function showResult(r){
  }
 }
 
+async function loadCounters(){
+ const {data,error}=await supabase.rpc("get_dice_channel_counters",{p_channel_id:channelId});
+ if(error){
+   console.warn("[Universal Dice Roller] Compteurs indisponibles :",error.message||error);
+   counters=[];
+   renderCounters();
+   return;
+ }
+ counters=(data||[]).slice().sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0)||String(a.name||"").localeCompare(String(b.name||""),"fr",{sensitivity:"base"}));
+ renderCounters();
+}
+
+function renderCounters(){
+ const wrap=$("tableCounters"), list=$("counterList"), add=$("counterAddBtn");
+ if(!wrap || !list || !add) return;
+ const isGm=myRole==="gm";
+ add.classList.toggle("hidden",!isGm);
+ wrap.classList.toggle("hidden",!isGm && !counters.length);
+
+ if(!counters.length){
+   list.innerHTML=`<div class="counter-empty">${isGm?"Aucun compteur. Utilisez « + Ajouter » pour en créer un.":"Aucun compteur."}</div>`;
+   return;
+ }
+
+ list.innerHTML=counters.map(c=>{
+   const id=esc(c.id);
+   const value=Number(c.value||0);
+   return `<div class="counter-card ${isGm?"":"counter-player"}">
+     <div class="counter-name" title="${esc(c.name)}">${esc(c.name)}</div>
+     ${isGm
+       ? `<div class="counter-controls">
+            <button class="btn small" onclick="adjustCounter('${id}',-1)" title="Diminuer de 1">−</button>
+            <div class="counter-value">${value}</div>
+            <button class="btn small" onclick="adjustCounter('${id}',1)" title="Augmenter de 1">+</button>
+          </div>
+          <div class="counter-edit"><button class="btn ghost small" onclick="openEditCounter('${id}')">Modifier</button></div>`
+       : `<div class="counter-value">${value}</div>`}
+   </div>`;
+ }).join("");
+}
+
+window.openCreateCounter=()=>{
+ if(myRole!=="gm") return;
+ modal("Ajouter un compteur",`
+   <label>Nom du compteur</label>
+   <input id="counterCreateName" maxlength="60" placeholder="Ex. Peur, Menace, Tour…">
+   <label>Valeur initiale</label>
+   <input id="counterCreateValue" type="number" step="1" value="0">
+   <div class="actions">
+     <button class="btn primary" onclick="createCounter()">Créer</button>
+     <button class="btn" onclick="closeModal()">Annuler</button>
+   </div>`);
+ setTimeout(()=>$("counterCreateName")?.focus(),0);
+};
+
+window.createCounter=async()=>{
+ try{
+   if(myRole!=="gm") throw new Error("Seul le MJ peut créer un compteur.");
+   const name=$("counterCreateName")?.value.trim()||"";
+   const value=Number($("counterCreateValue")?.value||0);
+   if(!name) throw new Error("Le nom du compteur est obligatoire.");
+   if(!Number.isSafeInteger(value)) throw new Error("La valeur doit être un nombre entier valide.");
+   const {error}=await supabase.rpc("create_dice_channel_counter",{
+     p_channel_id:channelId,
+     p_name:name,
+     p_initial_value:value
+   });
+   if(error) throw error;
+   closeModal();
+   await loadCounters();
+   toast("Compteur créé");
+ }catch(e){alert("Création impossible : "+(e.message||e))}
+};
+
+window.adjustCounter=async(id,delta)=>{
+ try{
+   if(myRole!=="gm") throw new Error("Seul le MJ peut modifier un compteur.");
+   const {error}=await supabase.rpc("adjust_dice_channel_counter",{
+     p_counter_id:id,
+     p_delta:Number(delta)
+   });
+   if(error) throw error;
+   // Realtime mettra tous les clients à jour ; ce rechargement donne aussi
+   // une réponse immédiate au MJ si l'événement Realtime tarde légèrement.
+   await loadCounters();
+ }catch(e){alert("Modification impossible : "+(e.message||e))}
+};
+
+window.openEditCounter=id=>{
+ if(myRole!=="gm") return;
+ const c=counters.find(x=>String(x.id)===String(id));
+ if(!c) return;
+ modal("Modifier le compteur",`
+   <label>Nom</label>
+   <input id="counterEditName" maxlength="60" value="${esc(c.name||"")}">
+   <label>Valeur</label>
+   <input id="counterEditValue" type="number" step="1" value="${Number(c.value||0)}">
+   <div class="actions">
+     <button class="btn primary" onclick="saveCounterEdit('${esc(c.id)}')">Enregistrer</button>
+     <button class="btn red" onclick="deleteCounter('${esc(c.id)}')">Supprimer</button>
+     <button class="btn" onclick="closeModal()">Annuler</button>
+   </div>`);
+};
+
+window.saveCounterEdit=async id=>{
+ try{
+   if(myRole!=="gm") throw new Error("Seul le MJ peut modifier un compteur.");
+   const name=$("counterEditName")?.value.trim()||"";
+   const value=Number($("counterEditValue")?.value||0);
+   if(!name) throw new Error("Le nom du compteur est obligatoire.");
+   if(!Number.isSafeInteger(value)) throw new Error("La valeur doit être un nombre entier valide.");
+
+   const {error}=await supabase.rpc("update_dice_channel_counter",{
+     p_counter_id:id,
+     p_name:name,
+     p_value:value
+   });
+   if(error) throw error;
+   closeModal();
+   await loadCounters();
+   toast("Compteur mis à jour");
+ }catch(e){alert("Modification impossible : "+(e.message||e))}
+};
+
+window.deleteCounter=async id=>{
+ if(myRole!=="gm") return;
+ const c=counters.find(x=>String(x.id)===String(id));
+ if(!confirm(`Supprimer le compteur « ${c?.name||"Compteur"} » ?`)) return;
+ try{
+   const {error}=await supabase.rpc("delete_dice_channel_counter",{p_counter_id:id});
+   if(error) throw error;
+   closeModal();
+   await loadCounters();
+   toast("Compteur supprimé");
+ }catch(e){alert("Suppression impossible : "+(e.message||e))}
+};
+
 async function loadPeople(){
  const {data,error}=await supabase.rpc("get_dice_channel_participants",{p_channel_id:channelId});
  if(error){toast("Participants indisponibles");return}
 
  myProfile=(data||[]).find(p=>p.user_id===session?.user?.id)||null;
+ if(myProfile?.role && myRole!==myProfile.role){
+   myRole=myProfile.role;
+   saveRoom();
+   renderCounters();
+ }
 
  $("people").innerHTML=(data||[]).map(p=>{
    if(p.role==="gm"){
@@ -1929,9 +2085,19 @@ async function startRealtime(){
      const full=await hydrateRealtimeRoll(p.new);
      processIncomingRoll(full,true);
    }).subscribe();
- realtimeMembers=supabase.channel("members-"+channelId+"-"+Math.random()).on("postgres_changes",{event:"*",schema:"public",table:"dice_channel_members",filter:`channel_id=eq.${channelId}`},()=>loadPeople()).subscribe();
+ realtimeMembers=supabase.channel("members-"+channelId+"-"+Math.random())
+   .on("postgres_changes",{event:"*",schema:"public",table:"dice_channel_members",filter:`channel_id=eq.${channelId}`},()=>loadPeople())
+   .subscribe();
+ realtimeCounters=supabase.channel("counters-"+channelId+"-"+Math.random())
+   .on("postgres_changes",{event:"*",schema:"public",table:"dice_channel_counters",filter:`channel_id=eq.${channelId}`},()=>loadCounters())
+   .subscribe();
 }
-async function stopRealtime(){if(realtimeRolls)await supabase.removeChannel(realtimeRolls);if(realtimeMembers)await supabase.removeChannel(realtimeMembers);realtimeRolls=realtimeMembers=null}
+async function stopRealtime(){
+ if(realtimeRolls) await supabase.removeChannel(realtimeRolls);
+ if(realtimeMembers) await supabase.removeChannel(realtimeMembers);
+ if(realtimeCounters) await supabase.removeChannel(realtimeCounters);
+ realtimeRolls=realtimeMembers=realtimeCounters=null;
+}
 
 $("adminBtn").onclick=()=>modal("Administration",`<div class="muted" style="font-size:.76rem;margin-bottom:8px">Garde-fou local. Ce mot de passe n'est pas une sécurité forte.</div><label>Mot de passe</label><input id="adminPass" type="password"><div class="actions"><button class="btn primary" onclick="unlockAdmin()">Ouvrir</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
 window.unlockAdmin=()=>{if($("adminPass").value!==CONFIG.ADMIN_PASSWORD){toast("Mot de passe incorrect");return}renderAdmin()};
